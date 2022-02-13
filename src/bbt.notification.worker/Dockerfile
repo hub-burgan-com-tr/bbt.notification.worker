@@ -7,6 +7,7 @@ RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /
 USER appuser
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+
 WORKDIR /src
 COPY ["bbt.notification.worker.csproj", "./"]
 RUN dotnet restore "bbt.notification.worker.csproj"
