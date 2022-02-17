@@ -7,5 +7,13 @@ namespace bbt.notification.worker.Models
         public string pushServiceReference { get; set; }
         public string smsServiceReference { get; set; }
         public string emailServiceReference { get; set; }
+        public string title_TR { get; set; }
+        public string title_EN { get; set; }
+        public object parentId { get; set; }
+        public int displayType { get; set; }
+        public string apiKey { get; set; }
+        public string secret { get; set; }
+        public string clientIdJsonPath { get; set; }
+        public string kafka { get; set; }
     }
 }

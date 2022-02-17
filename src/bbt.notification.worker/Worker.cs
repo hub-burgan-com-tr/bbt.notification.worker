@@ -1,25 +1,32 @@
+using bbt.framework.kafka;
 using bbt.notification.worker.Models;
+using Microsoft.Extensions.Options;
+
 namespace bbt.notification.worker;
 
 public class Worker : BackgroundService
 {
-    private readonly ILogger<Worker> _logger;
+    private readonly ILogger<Worker> logger;
+    private readonly KafkaSettings kafkaSettings;
+    public Worker(
 
-    public Worker(ILogger<Worker> logger)
+    ILogger<Worker> _logger,
+    IOptions<KafkaSettings> _options
+
+    )
     {
-        _logger = logger;
+        logger=_logger;
+        kafkaSettings=_options.Value;
     }
 
-    
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+
+            logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
             ApiHelper.InitializeClient();
-            var topicModel=NotificationServicesCall.GetTopicDetailsAsync();
-            await Task.Delay(1000, stoppingToken);
-        }
+            TopicModel topicModel = await NotificationServicesCall.GetTopicDetailsAsync();
+            var consumer = new TopicConsumer(kafkaSettings, stoppingToken,logger,topicModel);
+            await consumer.ConsumeAsync();       
     }
 }
