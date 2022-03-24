@@ -6,9 +6,17 @@
     <UserSecretsId>dotnet-bbt.notification.worker-4789F99A-C771-4997-B064-6554709BDFA8</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.0"/>
-    <PackageReference Include="bbt.framework.kafka" Version="6.2022.210.1449"/>
-    <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="5.2.7"/>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1"/>
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="6.0.1" />
+    <PackageReference Include="bbt.framework.kafka" Version="6.2022.217.929" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="5.2.7" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.1" />
+<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="6.0.0" />
+<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
+<PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="6.0.1" />
+<PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
+<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />
+<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
+<PackageReference Include="Microsoft.Extensions.Options" Version="6.0.0" />
   </ItemGroup>
 </Project>
