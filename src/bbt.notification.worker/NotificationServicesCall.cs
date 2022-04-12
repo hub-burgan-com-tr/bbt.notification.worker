@@ -1,21 +1,24 @@
 using bbt.notification.worker.Models;
-using Microsoft.Extensions.Caching.Memory;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
 
 namespace bbt.notification.worker
 {
     public class NotificationServicesCall
     {
-
         public static async Task<TopicModel> GetTopicDetailsAsync()
         {
+            BaseModel baseModel = new BaseModel();
+            TopicModel topicModel = new TopicModel();
+
 
             try
             {
+                var Topic_Id = Environment.GetEnvironmentVariable("Topic_Id") is null ? "1" : Environment.GetEnvironmentVariable("Topic_Id");
+                string path = baseModel.GetTopicDetailEndpoint().Replace("{id}", Topic_Id);
 
-                var Topic_Id = Environment.GetEnvironmentVariable("Topic_Id");
-                string path = $"https://localhost:7249/sources/id/1";
-
-                TopicModel topicModel = new TopicModel();
+                Console.WriteLine(path);
                 HttpResponseMessage response = await ApiHelper.ApiClient.GetAsync(path);
                 if (response.IsSuccessStatusCode)
                 {
@@ -31,27 +34,26 @@ namespace bbt.notification.worker
 
         }
 
-        public static async Task<ConsumerModel> GetConsumerDetailAsync(dynamic topicId, int clientId)
+        public static async Task<ConsumerModel> PostConsumerDetailAsync(PostConsumerDetailRequestModel requestModel)
         {
+            BaseModel baseModel = new BaseModel();
+            ConsumerModel consumerModel = new ConsumerModel();
             try
             {
-                ConsumerModel consumerModel = new ConsumerModel();
-                string path = $"https://localhost:7249/sources/" + topicId + "/consumers-by-client/" + clientId;
-                HttpResponseMessage response = await ApiHelper.ApiClient.GetAsync(path);
-                Console.WriteLine(path);
+                string path = baseModel.GetConsumerDetailEndpoint();
+                HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, requestModel);
+                response.EnsureSuccessStatusCode();
+
                 if (response.IsSuccessStatusCode)
                 {
                     consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
-                    if (consumerModel.consumers.Count()!=0)
-                    {
-                            // TODO
-                    }
+                    Console.WriteLine(consumerModel.consumers[0].phone.number);
+                    return consumerModel;
                 }
                 return consumerModel;
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
                 return null;
             }
         }
