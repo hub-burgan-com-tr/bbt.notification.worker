@@ -4,4 +4,4 @@ services:
   worker:
     image: worker
     environment:
-      - Topic_Id=XXX
+      - Topic_Id=X
