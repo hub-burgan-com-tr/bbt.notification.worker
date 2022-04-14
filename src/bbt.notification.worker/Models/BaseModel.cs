@@ -18,5 +18,9 @@ namespace bbt.notification.worker.Models
         {
             return _config.GetSection("NotificationServices:EndPoints:GetConsumerDetail").Value;
         }
+        public string GetKafkaCertPath()
+        {
+            return _config.GetSection("SslCaLocation").Value;
+        }
     }
 }
