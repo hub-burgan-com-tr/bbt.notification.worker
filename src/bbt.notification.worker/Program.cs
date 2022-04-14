@@ -8,11 +8,11 @@ using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Logging;
 using bbt.notification.worker;
 
-var builder = new ConfigurationBuilder();
-builder.SetBasePath(Directory.GetCurrentDirectory())
-.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-.AddJsonFile($"appsettings.{GetEnviroment()}.json", true, true)
-.AddEnvironmentVariables();
+var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
+var builder = new ConfigurationBuilder()
+    .AddJsonFile($"appsettings.json", true, true)
+    .AddJsonFile($"appsettings.{environment}.json", true, true)
+    .AddEnvironmentVariables();
 
 
 
