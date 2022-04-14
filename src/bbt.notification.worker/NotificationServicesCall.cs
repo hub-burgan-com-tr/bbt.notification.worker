@@ -28,7 +28,7 @@ namespace bbt.notification.worker
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                Console.WriteLine("GetTopicDetailsAsync"+e.Message);
                 return null;
             }
 
@@ -54,6 +54,7 @@ namespace bbt.notification.worker
             }
             catch (Exception e)
             {
+                Console.WriteLine("PostConsumerDetailAsync"+e.Message);
                 return null;
             }
         }

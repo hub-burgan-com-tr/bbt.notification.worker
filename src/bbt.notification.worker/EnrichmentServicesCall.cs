@@ -23,7 +23,8 @@ namespace bbt.notification.worker
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+
+                Console.WriteLine("GetEnrichmentServiceAsync"+e.Message);
 
                 return null;
             }
