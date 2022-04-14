@@ -3,13 +3,23 @@ namespace bbt.notification.worker.Models
     public class BaseModel
     {
         private readonly IConfiguration _config;
+
+
         public BaseModel()
         {
-            _config = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory())
-                    .AddJsonFile("appsettings.json").Build();
+
+            var builder = new ConfigurationBuilder();
+            builder.SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddJsonFile($"appsettings.{"Test"}.json", true, true)
+            .AddEnvironmentVariables();
+            _config=builder.Build();
         }
 
-
+        string? GetEnviroment()
+        {
+            return Environment.GetEnvironmentVariable("ENVIRONMENT");
+        }
         public string GetTopicDetailEndpoint()
         {
             return _config.GetSection("NotificationServices:EndPoints:GetTopicDetail").Value;
