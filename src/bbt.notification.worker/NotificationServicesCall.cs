@@ -47,7 +47,7 @@ namespace bbt.notification.worker
                 if (response.IsSuccessStatusCode)
                 {
                     consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
-                    Console.WriteLine(consumerModel.consumers[0].id);
+                    Console.WriteLine("TRY = > PostConsumerDetailAsync"+response.StatusCode+response.RequestMessage);
                     return consumerModel;
                 }
                 return consumerModel;

@@ -8,23 +8,27 @@ namespace bbt.notification.worker
 
         public static async Task<EnrichmentServiceResponseModel> GetEnrichmentServiceAsync(string path, EnrichmentServiceRequestModel topicModel)
         {
+            EnrichmentServiceResponseModel responseModel = new EnrichmentServiceResponseModel();
+
             try
             {
                 HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, topicModel);
                 response.EnsureSuccessStatusCode();
                 if (response.IsSuccessStatusCode)
                 {
-                    EnrichmentServiceResponseModel responseModel = await response.Content.ReadAsAsync<EnrichmentServiceResponseModel>();
+                    responseModel = await response.Content.ReadAsAsync<EnrichmentServiceResponseModel>();
                     return responseModel;
                 }
-            
-                return null;
-
+                else
+                {
+                    Console.WriteLine("GetEnrichmentServiceAsync" + response.StatusCode + "=>" + response.RequestMessage);
+                    return responseModel;
+                }
             }
             catch (Exception e)
             {
 
-                Console.WriteLine("GetEnrichmentServiceAsync"+e.Message);
+                Console.WriteLine("GetEnrichmentServiceAsync" + e.Message);
 
                 return null;
             }
