@@ -28,7 +28,7 @@ namespace bbt.notification.worker
             }
             catch (Exception e)
             {
-                Console.WriteLine("GetTopicDetailsAsync"+e.Message);
+                Console.WriteLine("GetTopicDetailsAsync" + e.Message);
                 return null;
             }
 
@@ -47,14 +47,17 @@ namespace bbt.notification.worker
                 if (response.IsSuccessStatusCode)
                 {
                     consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
-                    Console.WriteLine("TRY = > PostConsumerDetailAsync"+response.StatusCode+response.RequestMessage);
                     return consumerModel;
                 }
-                return consumerModel;
+                else
+                {
+                    Console.WriteLine("TRY = > PostConsumerDetailAsync" + response.StatusCode + response.RequestMessage);
+                    return consumerModel;
+                }
             }
             catch (Exception e)
             {
-                Console.WriteLine("PostConsumerDetailAsync"+e.Message);
+                Console.WriteLine("PostConsumerDetailAsync" + e.Message);
                 return null;
             }
         }
