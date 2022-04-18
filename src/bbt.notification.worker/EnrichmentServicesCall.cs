@@ -21,14 +21,14 @@ namespace bbt.notification.worker
                 }
                 else
                 {
-                    Console.WriteLine("GetEnrichmentServiceAsync" + response.StatusCode + "=>" + response.RequestMessage);
+                    Console.WriteLine("TRY => GetEnrichmentServiceAsync" + response.StatusCode + "=>" + response.RequestMessage);
                     return responseModel;
                 }
             }
             catch (Exception e)
             {
 
-                Console.WriteLine("GetEnrichmentServiceAsync" + e.Message);
+                Console.WriteLine("CATCH => GetEnrichmentServiceAsync" + e.Message);
 
                 return null;
             }
