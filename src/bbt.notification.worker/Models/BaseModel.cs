@@ -13,7 +13,7 @@ namespace bbt.notification.worker.Models
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .AddJsonFile($"appsettings.{"Test"}.json", true, true)
             .AddEnvironmentVariables();
-            _config=builder.Build();
+            _config = builder.Build();
         }
 
         string? GetEnviroment()
@@ -31,6 +31,10 @@ namespace bbt.notification.worker.Models
         public string GetKafkaCertPath()
         {
             return _config.GetSection("SslCaLocation").Value;
+        }
+        public string GetSendSmsEndpoint()
+        {
+            return _config.GetSection("MessagingGateway:EndPoints:SendSms").Value;
         }
     }
 }

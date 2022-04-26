@@ -6,8 +6,9 @@
     <UserSecretsId>dotnet-bbt.notification.worker-4789F99A-C771-4997-B064-6554709BDFA8</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="bbt.framework.common" Version="6.2022.422.1027" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="6.0.1" />
-    <PackageReference Include="bbt.framework.kafka" Version="6.2022.217.929" />
+    <PackageReference Include="bbt.framework.kafka" Version="6.2022.422.1027" />
     <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="5.2.7" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.1" />

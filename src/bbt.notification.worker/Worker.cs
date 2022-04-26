@@ -27,7 +27,7 @@ public class Worker : BackgroundService
         logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
         ApiHelper.InitializeClient();
         TopicModel topicModel = await NotificationServicesCall.GetTopicDetailsAsync();
-        kafkaSettings.Topic = topicModel.topic;
+        kafkaSettings.Topic = new string[] { topicModel.topic };        
         kafkaSettings.BootstrapServers = topicModel.kafkaUrl;
         kafkaSettings.GroupId = topicModel.title_TR;
         kafkaSettings.SslCaLocation = baseModel.GetKafkaCertPath();

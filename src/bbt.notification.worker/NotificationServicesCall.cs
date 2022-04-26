@@ -49,7 +49,6 @@ namespace bbt.notification.worker
                 }
                 else if ((int)response.StatusCode == 470)
                 {
-                    Console.WriteLine("TRY = > PostConsumerDetailAsync" + response.StatusCode + response.RequestMessage);
                     return consumerModel;
                 }
                 return null;
@@ -57,7 +56,7 @@ namespace bbt.notification.worker
             }
             catch (Exception e)
             {
-                Console.WriteLine("TRY = > PostConsumerDetailAsync" + e.Message);
+                Console.WriteLine("CATCH = > " +  JsonConvert.SerializeObject(requestModel));
                 return null;
             }
         }

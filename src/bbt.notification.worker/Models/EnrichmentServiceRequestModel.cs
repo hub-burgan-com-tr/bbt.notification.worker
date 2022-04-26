@@ -3,6 +3,6 @@ namespace bbt.notification.worker.Models
     public class EnrichmentServiceRequestModel
     {
         public long customerId { get; set; }
-        public String dataModel { get; set; }
+        public string jsonData { get; set; }
     }
 }
