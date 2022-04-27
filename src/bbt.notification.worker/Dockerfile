@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/runtime:6.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
 WORKDIR /app
 
 # Creates a non-root user with an explicit UID and adds permission to access the /app folder
