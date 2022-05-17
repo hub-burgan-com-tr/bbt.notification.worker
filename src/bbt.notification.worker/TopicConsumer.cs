@@ -31,7 +31,7 @@ namespace bbt.notification.worker
 
             PostConsumerDetailRequestModel postConsumerDetailRequestModel = new PostConsumerDetailRequestModel();
             postConsumerDetailRequestModel.client = Convert.ToInt32(clientId);
-            postConsumerDetailRequestModel.sourceId = Convert.ToInt32(Environment.GetEnvironmentVariable("Topic_Id") is null ? "1" : Environment.GetEnvironmentVariable("Topic_Id"));
+            postConsumerDetailRequestModel.sourceId = Convert.ToInt32(Environment.GetEnvironmentVariable("Topic_Id") is null ? "10158" : Environment.GetEnvironmentVariable("Topic_Id"));
             postConsumerDetailRequestModel.jsonData = o.SelectToken("message.data").ToString();
             postConsumerDetailRequestModel.jsonData = postConsumerDetailRequestModel.jsonData.Replace(System.Environment.NewLine, string.Empty);
 
@@ -45,21 +45,10 @@ namespace bbt.notification.worker
                     enrichmentServiceRequestModel.jsonData = enrichmentServiceRequestModel.jsonData.Replace(System.Environment.NewLine, string.Empty);
                     EnrichmentServiceResponseModel enrichmentServiceResponseModel = await EnrichmentServicesCall.GetEnrichmentServiceAsync(item.ServiceUrl, enrichmentServiceRequestModel);
                     postConsumerDetailRequestModel.jsonData = enrichmentServiceResponseModel.dataModel;
-
                 }
             }
             ConsumerModel consumerModel = await NotificationServicesCall.PostConsumerDetailAsync(postConsumerDetailRequestModel);
 
-            if (consumerModel is not null && consumerModel.consumers is not null && consumerModel.consumers.Count() == 1 && consumerModel.consumers[0].client == 0)
-            {
-                JObject jsonData = JObject.Parse(postConsumerDetailRequestModel.jsonData);
-                if (consumerModel.consumers[0].isSmsEnabled)
-                {
-                    consumerModel.consumers[0].phone.countryCode = Convert.ToInt32(jsonData.SelectToken("countryCode"));
-                    consumerModel.consumers[0].phone.prefix = Convert.ToInt32(jsonData.SelectToken("cityCode"));
-                    consumerModel.consumers[0].phone.number = Convert.ToInt32(jsonData.SelectToken("telephoneNumber"));
-                }
-            }
             DengageRequestModel dengageRequestModel = new DengageRequestModel();
             string path = baseModel.GetSendSmsEndpoint();
             dengageRequestModel.phone.countryCode = consumerModel.consumers[0].phone.countryCode;

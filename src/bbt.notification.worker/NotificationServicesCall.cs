@@ -15,9 +15,8 @@ namespace bbt.notification.worker
 
             try
             {
-                var Topic_Id = Environment.GetEnvironmentVariable("Topic_Id") is null ? "1" : Environment.GetEnvironmentVariable("Topic_Id");
+                var Topic_Id = Environment.GetEnvironmentVariable("Topic_Id") is null ? "10158" : Environment.GetEnvironmentVariable("Topic_Id");
                 string path = baseModel.GetTopicDetailEndpoint().Replace("{id}", Topic_Id);
-
                 Console.WriteLine(path);
                 HttpResponseMessage response = await ApiHelper.ApiClient.GetAsync(path);
                 if (response.IsSuccessStatusCode)
