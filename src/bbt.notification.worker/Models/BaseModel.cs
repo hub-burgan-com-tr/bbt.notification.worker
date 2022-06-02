@@ -14,6 +14,7 @@ namespace bbt.notification.worker.Models
             .AddJsonFile($"appsettings.{"Test"}.json", true, true)
             .AddEnvironmentVariables();
             _config = builder.Build();
+            
         }
 
         string? GetEnviroment()

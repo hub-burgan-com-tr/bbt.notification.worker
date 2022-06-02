@@ -28,7 +28,6 @@ namespace bbt.notification.worker
 
             JObject o = JObject.Parse(model);
             JToken clientId = o.SelectToken(topicModel.clientIdJsonPath);
-
             PostConsumerDetailRequestModel postConsumerDetailRequestModel = new PostConsumerDetailRequestModel();
             postConsumerDetailRequestModel.client = Convert.ToInt32(clientId);
             postConsumerDetailRequestModel.sourceId = Convert.ToInt32(Environment.GetEnvironmentVariable("Topic_Id") is null ? "10158" : Environment.GetEnvironmentVariable("Topic_Id"));
