@@ -12,7 +12,6 @@ namespace bbt.notification.worker.Models
             builder.SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .AddJsonFile($"appsettings.{"Test"}.json", true, true)
-            .AddJsonFile($"appsettings.{"Prod"}.json", true, true)
             .AddEnvironmentVariables();
             _config = builder.Build();
         }
