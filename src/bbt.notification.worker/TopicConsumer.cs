@@ -43,13 +43,17 @@ namespace bbt.notification.worker
                     enrichmentServiceRequestModel.jsonData = o.SelectToken("message.data").ToString();
                     enrichmentServiceRequestModel.jsonData = enrichmentServiceRequestModel.jsonData.Replace(System.Environment.NewLine, string.Empty);
                     EnrichmentServiceResponseModel enrichmentServiceResponseModel = await EnrichmentServicesCall.GetEnrichmentServiceAsync(item.ServiceUrl, enrichmentServiceRequestModel);
-                    postConsumerDetailRequestModel.jsonData = enrichmentServiceResponseModel.dataModel;
+                    if (!string.IsNullOrEmpty(enrichmentServiceResponseModel.dataModel))
+                    {
+                        postConsumerDetailRequestModel.jsonData = enrichmentServiceResponseModel.dataModel;
+                    }
                 }
             }
             ConsumerModel consumerModel = await NotificationServicesCall.PostConsumerDetailAsync(postConsumerDetailRequestModel);
 
             DengageRequestModel dengageRequestModel = new DengageRequestModel();
             string path = baseModel.GetSendSmsEndpoint();
+            dengageRequestModel.customerNo=postConsumerDetailRequestModel.client.ToString();
             dengageRequestModel.phone.countryCode = consumerModel.consumers[0].phone.countryCode;
             dengageRequestModel.phone.prefix = consumerModel.consumers[0].phone.prefix;
             dengageRequestModel.phone.number = consumerModel.consumers[0].phone.number;
@@ -57,6 +61,7 @@ namespace bbt.notification.worker
             dengageRequestModel.templateParams = postConsumerDetailRequestModel.jsonData;
             dengageRequestModel.process.name = "Notification-Cashback";
             HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, dengageRequestModel);
+            Console.WriteLine(response.RequestMessage);
             if (response.IsSuccessStatusCode)
             {
                 consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
