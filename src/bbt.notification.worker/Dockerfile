@@ -20,6 +20,7 @@ RUN dotnet publish "bbt.notification.worker.csproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app
+COPY kafka_nonprod.cer kafka_prod.cer .
 COPY --from=publish /app/publish .
 ENV Topic_Id=1
 ENTRYPOINT ["dotnet", "bbt.notification.worker.dll"]
