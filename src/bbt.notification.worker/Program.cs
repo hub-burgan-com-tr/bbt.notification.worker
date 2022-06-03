@@ -8,11 +8,13 @@ using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Logging;
 using bbt.notification.worker;
 
+var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
 var builder = new ConfigurationBuilder();
-builder.SetBasePath(Directory.GetCurrentDirectory())
-.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-.AddJsonFile($"appsettings.{GetEnviroment()}.json", true, true)
-.AddEnvironmentVariables();
+var builder = new ConfigurationBuilder()
+    .AddJsonFile($"appsettings.json", true, true)
+    .AddJsonFile($"appsettings.{environment}.json", true, true)
+    .AddEnvironmentVariables();
+
 
 
 
@@ -26,12 +28,6 @@ builder.AddUserSecrets<Program>();
 
 IConfigurationRoot configuration = builder.Build();
 
-
-
-string? GetEnviroment()
-{
-    return Environment.GetEnvironmentVariable("ENVIRONMENT");
-}
 
 IHost host = Host.CreateDefaultBuilder(args)
 .ConfigureServices(services =>
