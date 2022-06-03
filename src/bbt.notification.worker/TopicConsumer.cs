@@ -4,6 +4,7 @@ using bbt.notification.worker.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
+
 namespace bbt.notification.worker
 {
     public class TopicConsumer : BaseConsumer<String>
@@ -53,6 +54,8 @@ namespace bbt.notification.worker
 
             DengageRequestModel dengageRequestModel = new DengageRequestModel();
             string path = baseModel.GetSendSmsEndpoint();
+            string output = JsonConvert.SerializeObject(postConsumerDetailRequestModel);
+            Console.WriteLine(output);
             dengageRequestModel.customerNo=postConsumerDetailRequestModel.client.ToString();
             dengageRequestModel.phone.countryCode = consumerModel.consumers[0].phone.countryCode;
             dengageRequestModel.phone.prefix = consumerModel.consumers[0].phone.prefix;
@@ -61,7 +64,7 @@ namespace bbt.notification.worker
             dengageRequestModel.templateParams = postConsumerDetailRequestModel.jsonData;
             dengageRequestModel.process.name = "Notification-Cashback";
             HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, dengageRequestModel);
-            Console.WriteLine(response.RequestMessage);
+            Console.WriteLine(response.StatusCode);
             if (response.IsSuccessStatusCode)
             {
                 consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
