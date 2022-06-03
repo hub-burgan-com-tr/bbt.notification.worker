@@ -11,7 +11,7 @@ namespace bbt.notification.worker.Models
         }
         public string templateParams { get; set; }
         public string template { get; set; }
-        public string customerNo { get; set; }
+        public long customerNo { get; set; }
         public Phone phone { get; set; }
         public Process process { get; set; }
 
