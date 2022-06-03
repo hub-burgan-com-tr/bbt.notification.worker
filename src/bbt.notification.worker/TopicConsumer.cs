@@ -54,9 +54,6 @@ namespace bbt.notification.worker
 
             DengageRequestModel dengageRequestModel = new DengageRequestModel();
             string path = baseModel.GetSendSmsEndpoint();
-            string output = JsonConvert.SerializeObject(postConsumerDetailRequestModel);
-            Console.WriteLine(output);
-            dengageRequestModel.customerNo=postConsumerDetailRequestModel.client;
             dengageRequestModel.phone.countryCode = consumerModel.consumers[0].phone.countryCode;
             dengageRequestModel.phone.prefix = consumerModel.consumers[0].phone.prefix;
             dengageRequestModel.phone.number = consumerModel.consumers[0].phone.number;
