@@ -9,14 +9,10 @@ using Microsoft.Extensions.Logging;
 using bbt.notification.worker;
 
 var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
-var builder = new ConfigurationBuilder();
 var builder = new ConfigurationBuilder()
     .AddJsonFile($"appsettings.json", true, true)
     .AddJsonFile($"appsettings.{environment}.json", true, true)
     .AddEnvironmentVariables();
-
-
-
 
 //only add secrets in development
 #if DEBUG

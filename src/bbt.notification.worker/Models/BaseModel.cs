@@ -8,20 +8,14 @@ namespace bbt.notification.worker.Models
         public BaseModel()
         {
 
-            var builder = new ConfigurationBuilder();
-            builder.SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-            .AddJsonFile($"appsettings.{GetEnviroment()}.json", true, true)
-            .AddEnvironmentVariables();
+            var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
+            var builder = new ConfigurationBuilder()
+                .AddJsonFile($"appsettings.json", true, true)
+                .AddJsonFile($"appsettings.{environment}.json", true, true)
+                .AddEnvironmentVariables();
             _config = builder.Build();
         }
 
-        string? GetEnviroment()
-        {
-            Console.WriteLine( Environment.GetEnvironmentVariable("ENVIRONMENT"));
-            
-            return Environment.GetEnvironmentVariable("ENVIRONMENT");
-        }
         public string GetTopicDetailEndpoint()
         {
             return _config.GetSection("NotificationServices:EndPoints:GetTopicDetail").Value;
