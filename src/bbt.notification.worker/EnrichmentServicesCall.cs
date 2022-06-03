@@ -1,36 +1,56 @@
+using bbt.notification.worker.Helper;
 using bbt.notification.worker.Models;
+using Elastic.Apm.Api;
 using Newtonsoft.Json;
+using System.Reflection;
 
 namespace bbt.notification.worker
 {
     public class EnrichmentServicesCall
     {
-
-        public static async Task<EnrichmentServiceResponseModel> GetEnrichmentServiceAsync(string path, EnrichmentServiceRequestModel topicModel)
+        private readonly ITracer _tracer;
+        private readonly ILogHelper _logHelper;
+        public EnrichmentServicesCall(
+        ITracer tracer, ILogHelper logHelper
+      )
+        {
+            _tracer = tracer;
+            _logHelper = logHelper;
+        }
+        //Static olduðu için eklenmiyor.
+        public async Task<EnrichmentServiceResponseModel> GetEnrichmentServiceAsync(string path, EnrichmentServiceRequestModel topicModel)
         {
             EnrichmentServiceResponseModel responseModel = new EnrichmentServiceResponseModel();
-
-            try
+            await _tracer.CaptureTransaction("GetEnrichmentServiceAsync", ApiConstants.TypeRequest, async () =>
             {
-                HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, topicModel);
-                response.EnsureSuccessStatusCode();
-                if (response.IsSuccessStatusCode)
+                try
                 {
-                    responseModel = await response.Content.ReadAsAsync<EnrichmentServiceResponseModel>();
-                    return responseModel;
+                    HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, topicModel);
+                    response.EnsureSuccessStatusCode();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        responseModel = await response.Content.ReadAsAsync<EnrichmentServiceResponseModel>();
+                        return responseModel;
+                    }
+                    else
+                    {
+                        Console.WriteLine("TRY => GetEnrichmentServiceAsync" + response.StatusCode + "=>" + response.RequestMessage);
+                        return responseModel;
+                    }
                 }
-                else
+                catch (Exception e)
                 {
-                    Console.WriteLine("TRY => GetEnrichmentServiceAsync" + response.StatusCode + "=>" + response.RequestMessage);
-                    return responseModel;
+                    var req = new
+                    {
+                        path = path,
+                        topicModel = topicModel
+                    };
+                    _logHelper.LogCreate(req, responseModel, MethodBase.GetCurrentMethod().Name, e.Message);
+                    Console.WriteLine("CATCH => GetEnrichmentServiceAsync" + e.Message);
+                    return null;
                 }
-            }
-            catch (Exception e)
-            {
-
-                Console.WriteLine("CATCH => GetEnrichmentServiceAsync" + e.Message);
-                return null;
-            }
+            });
+            return responseModel;
         }
     }
 }

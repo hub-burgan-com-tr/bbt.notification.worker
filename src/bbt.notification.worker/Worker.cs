@@ -1,6 +1,10 @@
 using bbt.framework.kafka;
+using bbt.notification.worker.Helper;
 using bbt.notification.worker.Models;
+using Elastic.Apm;
+using Elastic.Apm.Api;
 using Microsoft.Extensions.Options;
+using System.Reflection;
 
 namespace bbt.notification.worker;
 
@@ -8,30 +12,51 @@ public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> logger;
     private readonly KafkaSettings kafkaSettings;
+    private readonly ITracer tracer;
     BaseModel baseModel = new BaseModel();
+    private readonly ILogHelper logHelper;
     public Worker(
 
     ILogger<Worker> _logger,
-    IOptions<KafkaSettings> _options
-
+    IOptions<KafkaSettings> _options,
+    ITracer _tracer,ILogHelper _logHelper
     )
     {
         logger = _logger;
         kafkaSettings = _options.Value;
+        tracer = _tracer;
+        logHelper = _logHelper;
     }
 
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
 
-        logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-        ApiHelper.InitializeClient();
-        TopicModel topicModel = await NotificationServicesCall.GetTopicDetailsAsync();
-        kafkaSettings.Topic = new string[] { topicModel.topic };        
-        kafkaSettings.BootstrapServers = topicModel.kafkaUrl;
-        kafkaSettings.GroupId = topicModel.title_TR;
-        kafkaSettings.SslCaLocation = baseModel.GetKafkaCertPath();
-        var consumer = new TopicConsumer(kafkaSettings, stoppingToken, logger, topicModel);
-        await consumer.ConsumeAsync();
+        await tracer.CaptureTransaction("ExecuteAsync", ApiConstants.TypeRequest, async () =>
+        {
+            try
+            {
+                logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                ApiHelper.InitializeClient();
+                NotificationServicesCall serviceCall = new NotificationServicesCall(tracer,logHelper);
+                TopicModel topicModel = await serviceCall.GetTopicDetailsAsync();
+                if (topicModel != null)
+                {
+                    kafkaSettings.Topic = new string[] { topicModel.topic };
+                    kafkaSettings.BootstrapServers = topicModel.kafkaUrl;
+                    kafkaSettings.GroupId = "test12";// topicModel.title_TR;
+                    kafkaSettings.SslCaLocation = baseModel.GetKafkaCertPath();
+                    var consumer = new TopicConsumer(kafkaSettings, stoppingToken, tracer, logger, topicModel,logHelper);
+                     await consumer.ConsumeAsync();
+                }
+            }
+            catch (Exception e)
+            {
+                logHelper.LogCreate(stoppingToken," ", MethodBase.GetCurrentMethod().Name, e.Message);
+                tracer.CaptureException(e);
+            }
+        });
+    
+
     }
 }
