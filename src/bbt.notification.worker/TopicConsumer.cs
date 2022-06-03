@@ -26,6 +26,10 @@ namespace bbt.notification.worker
         }
         public override async Task<bool> Process(string model)
         {
+            try
+            {
+
+            
 
             JObject o = JObject.Parse(model);
             JToken clientId = o.SelectToken(topicModel.clientIdJsonPath);
@@ -67,6 +71,12 @@ namespace bbt.notification.worker
                 consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
             }
             return true;
+        }
+        catch(Exception e)
+        {
+            Console.WriteLine(e.Message);
+            return true;
+        }
         }
 
     }
