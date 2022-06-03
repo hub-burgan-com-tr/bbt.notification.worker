@@ -11,10 +11,10 @@ namespace bbt.notification.worker.Models
             var builder = new ConfigurationBuilder();
             builder.SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-            .AddJsonFile($"appsettings.{"Test"}.json", true, true)
+            .AddJsonFile($"appsettings.{GetEnviroment()}.json", true, true)
             .AddEnvironmentVariables();
             _config = builder.Build();
-            
+
         }
 
         string? GetEnviroment()
