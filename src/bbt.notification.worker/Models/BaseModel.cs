@@ -14,11 +14,12 @@ namespace bbt.notification.worker.Models
             .AddJsonFile($"appsettings.{GetEnviroment()}.json", true, true)
             .AddEnvironmentVariables();
             _config = builder.Build();
-
         }
 
         string? GetEnviroment()
         {
+            Console.WriteLine( Environment.GetEnvironmentVariable("ENVIRONMENT"));
+            
             return Environment.GetEnvironmentVariable("ENVIRONMENT");
         }
         public string GetTopicDetailEndpoint()
