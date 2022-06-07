@@ -18,7 +18,7 @@ namespace bbt.notification.worker
                 var Topic_Id = Environment.GetEnvironmentVariable("Topic_Id") is null ? "10158" : Environment.GetEnvironmentVariable("Topic_Id");
                 string path = baseModel.GetTopicDetailEndpoint().Replace("{id}", Topic_Id);
                 Console.WriteLine(baseModel.GetTopicDetailEndpoint());
-                Console.WriteLine("=>>"+path);
+                Console.WriteLine("=>>" + path);
                 HttpResponseMessage response = await ApiHelper.ApiClient.GetAsync(path);
                 if (response.IsSuccessStatusCode)
                 {
@@ -45,18 +45,23 @@ namespace bbt.notification.worker
                 if (response.IsSuccessStatusCode)
                 {
                     consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
+                    Console.WriteLine("BAŞARILI => PostConsumerDetailAsync" + response.StatusCode + "=>" + response.RequestMessage);
+
                     return consumerModel;
                 }
                 else if ((int)response.StatusCode == 470)
                 {
+                    Console.WriteLine("BAŞARISIZ => PostConsumerDetailAsync" + response.StatusCode + "=>" + response.RequestMessage);
                     return consumerModel;
                 }
+                Console.WriteLine("BAŞARISIZ => PostConsumerDetailAsync" + response.StatusCode + "=>" + response.RequestMessage);
+
                 return null;
 
             }
             catch (Exception e)
             {
-                Console.WriteLine("CATCH = > " +  JsonConvert.SerializeObject(requestModel));
+                Console.WriteLine("CATCH = > " + JsonConvert.SerializeObject(requestModel));
                 return null;
             }
         }

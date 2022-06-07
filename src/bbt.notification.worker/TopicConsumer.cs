@@ -49,27 +49,32 @@ namespace bbt.notification.worker
                         Console.WriteLine(item.ServiceUrl);
                         Console.WriteLine(JsonConvert.SerializeObject(enrichmentServiceRequestModel));
                         Console.WriteLine(JsonConvert.SerializeObject(enrichmentServiceResponseModel));
-                        if (enrichmentServiceResponseModel != null && !string.IsNullOrEmpty(enrichmentServiceResponseModel.dataModel))
-                        {
-                            Console.WriteLine("STEP1");
-                            postConsumerDetailRequestModel.jsonData = enrichmentServiceResponseModel.dataModel;
-                            Console.WriteLine("STEP2");
-                        }
+
+                        postConsumerDetailRequestModel.jsonData = enrichmentServiceResponseModel.dataModel;
+
                     }
                 }
-                Console.WriteLine("STEP3");
+                Console.WriteLine("STEP3" + JsonConvert.SerializeObject(postConsumerDetailRequestModel));
                 ConsumerModel consumerModel = await NotificationServicesCall.PostConsumerDetailAsync(postConsumerDetailRequestModel);
-                Console.WriteLine("STEP4");
+                Console.WriteLine("STEP4=>" + JsonConvert.SerializeObject(consumerModel));
                 DengageRequestModel dengageRequestModel = new DengageRequestModel();
-                Console.WriteLine("STEP5=>"+baseModel.GetSendSmsEndpoint());
+                Console.WriteLine("STEP5=>" + baseModel.GetSendSmsEndpoint());
                 string path = baseModel.GetSendSmsEndpoint();
+                Console.WriteLine("STEP6");
                 dengageRequestModel.phone.countryCode = consumerModel.consumers[0].phone.countryCode;
+                Console.WriteLine("STEP7");
                 dengageRequestModel.phone.prefix = consumerModel.consumers[0].phone.prefix;
+                Console.WriteLine("STEP8");
                 dengageRequestModel.phone.number = consumerModel.consumers[0].phone.number;
+                Console.WriteLine("STEP9");
                 dengageRequestModel.template = topicModel.smsServiceReference;
+                Console.WriteLine("STEP10");
                 dengageRequestModel.templateParams = postConsumerDetailRequestModel.jsonData;
+                Console.WriteLine("STEP11");
                 dengageRequestModel.process.name = "Notification-Cashback";
-                HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, dengageRequestModel);
+                Console.WriteLine("STEP12");
+                
+                 HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, dengageRequestModel);
                 Console.WriteLine(response.StatusCode);
                 if (response.IsSuccessStatusCode)
                 {
