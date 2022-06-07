@@ -47,17 +47,21 @@ namespace bbt.notification.worker
                         enrichmentServiceRequestModel.dataModel = enrichmentServiceRequestModel.dataModel.Replace(System.Environment.NewLine, string.Empty);
                         EnrichmentServiceResponseModel enrichmentServiceResponseModel = await EnrichmentServicesCall.GetEnrichmentServiceAsync(item.ServiceUrl, enrichmentServiceRequestModel);
                         Console.WriteLine(item.ServiceUrl);
-                        Console.WriteLine(JsonConvert.SerializeObject(enrichmentServiceResponseModel));
                         Console.WriteLine(JsonConvert.SerializeObject(enrichmentServiceRequestModel));
+                        Console.WriteLine(JsonConvert.SerializeObject(enrichmentServiceResponseModel));
                         if (enrichmentServiceResponseModel != null && !string.IsNullOrEmpty(enrichmentServiceResponseModel.dataModel))
                         {
+                            Console.WriteLine("STEP1");
                             postConsumerDetailRequestModel.jsonData = enrichmentServiceResponseModel.dataModel;
+                            Console.WriteLine("STEP2");
                         }
                     }
                 }
+                Console.WriteLine("STEP3");
                 ConsumerModel consumerModel = await NotificationServicesCall.PostConsumerDetailAsync(postConsumerDetailRequestModel);
-
+                Console.WriteLine("STEP4");
                 DengageRequestModel dengageRequestModel = new DengageRequestModel();
+                Console.WriteLine("STEP5=>"+baseModel.GetSendSmsEndpoint());
                 string path = baseModel.GetSendSmsEndpoint();
                 dengageRequestModel.phone.countryCode = consumerModel.consumers[0].phone.countryCode;
                 dengageRequestModel.phone.prefix = consumerModel.consumers[0].phone.prefix;
