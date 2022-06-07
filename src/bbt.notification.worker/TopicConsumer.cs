@@ -49,7 +49,6 @@ namespace bbt.notification.worker
                         Console.WriteLine(item.ServiceUrl);
                         Console.WriteLine(JsonConvert.SerializeObject(enrichmentServiceResponseModel));
                         Console.WriteLine(JsonConvert.SerializeObject(enrichmentServiceRequestModel));
-
                         if (enrichmentServiceResponseModel != null && !string.IsNullOrEmpty(enrichmentServiceResponseModel.dataModel))
                         {
                             postConsumerDetailRequestModel.jsonData = enrichmentServiceResponseModel.dataModel;
