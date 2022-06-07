@@ -17,11 +17,13 @@ namespace bbt.notification.worker
                 if (response.IsSuccessStatusCode)
                 {
                     responseModel = await response.Content.ReadAsAsync<EnrichmentServiceResponseModel>();
+                    Console.WriteLine("BAŞARILI => GetEnrichmentServiceAsync" + response.StatusCode + "=>" + response.RequestMessage);
+
                     return responseModel;
                 }
                 else
                 {
-                    Console.WriteLine("TRY => GetEnrichmentServiceAsync" + response.StatusCode + "=>" + response.RequestMessage);
+                    Console.WriteLine("BAŞARISIZ => GetEnrichmentServiceAsync" + response.StatusCode + "=>" + response.RequestMessage);
                     return responseModel;
                 }
             }
