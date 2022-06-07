@@ -46,14 +46,15 @@ namespace bbt.notification.worker
                         enrichmentServiceRequestModel.dataModel = o.SelectToken("message.data").ToString();
                         enrichmentServiceRequestModel.dataModel = enrichmentServiceRequestModel.dataModel.Replace(System.Environment.NewLine, string.Empty);
                         EnrichmentServiceResponseModel enrichmentServiceResponseModel = await EnrichmentServicesCall.GetEnrichmentServiceAsync(item.ServiceUrl, enrichmentServiceRequestModel);
-                        Console.WriteLine("EnrichmentResponse=>" +JsonConvert.SerializeObject(enrichmentServiceResponseModel));
+                        Console.WriteLine("EnrichmentResponse=>" + JsonConvert.SerializeObject(enrichmentServiceResponseModel));
 
                         postConsumerDetailRequestModel.jsonData = enrichmentServiceResponseModel.dataModel;
 
                     }
                 }
+                Console.WriteLine("consumerRequestModel=>" + JsonConvert.SerializeObject(postConsumerDetailRequestModel));
                 ConsumerModel consumerModel = await NotificationServicesCall.PostConsumerDetailAsync(postConsumerDetailRequestModel);
-                Console.WriteLine("consumerModel=>" + JsonConvert.SerializeObject(consumerModel));
+                Console.WriteLine("consumerresponseModel=>" + JsonConvert.SerializeObject(consumerModel));
                 DengageRequestModel dengageRequestModel = new DengageRequestModel();
                 string path = baseModel.GetSendSmsEndpoint();
                 dengageRequestModel.phone.countryCode = consumerModel.consumers[0].phone.countryCode;
@@ -62,9 +63,9 @@ namespace bbt.notification.worker
                 dengageRequestModel.template = topicModel.smsServiceReference;
                 dengageRequestModel.templateParams = postConsumerDetailRequestModel.jsonData;
                 dengageRequestModel.process.name = "Notification-Cashback";
-                
-                 HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, dengageRequestModel);
-                Console.WriteLine("SMS=>"+response.StatusCode);
+
+                HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, dengageRequestModel);
+                Console.WriteLine("SMS=>" + response.StatusCode);
                 if (response.IsSuccessStatusCode)
                 {
                     consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
