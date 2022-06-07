@@ -43,8 +43,8 @@ namespace bbt.notification.worker
                     {
                         EnrichmentServiceRequestModel enrichmentServiceRequestModel = new EnrichmentServiceRequestModel();
                         enrichmentServiceRequestModel.customerId = Convert.ToInt32(clientId);
-                        enrichmentServiceRequestModel.jsonData = o.SelectToken("message.data").ToString();
-                        enrichmentServiceRequestModel.jsonData = enrichmentServiceRequestModel.jsonData.Replace(System.Environment.NewLine, string.Empty);
+                        enrichmentServiceRequestModel.dataModel = o.SelectToken("message.data").ToString();
+                        enrichmentServiceRequestModel.dataModel = enrichmentServiceRequestModel.dataModel.Replace(System.Environment.NewLine, string.Empty);
                         EnrichmentServiceResponseModel enrichmentServiceResponseModel = await EnrichmentServicesCall.GetEnrichmentServiceAsync(item.ServiceUrl, enrichmentServiceRequestModel);
                         Console.WriteLine(item.ServiceUrl);
                         Console.WriteLine(JsonConvert.SerializeObject(enrichmentServiceResponseModel));
