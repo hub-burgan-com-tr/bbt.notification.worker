@@ -20,7 +20,6 @@ public class Worker : BackgroundService
         kafkaSettings = _options.Value;
     }
 
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
 

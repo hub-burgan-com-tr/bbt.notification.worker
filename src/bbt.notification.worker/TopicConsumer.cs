@@ -29,8 +29,6 @@ namespace bbt.notification.worker
             try
             {
 
-
-
                 JObject o = JObject.Parse(model);
                 JToken clientId = o.SelectToken(topicModel.clientIdJsonPath);
                 PostConsumerDetailRequestModel postConsumerDetailRequestModel = new PostConsumerDetailRequestModel();
