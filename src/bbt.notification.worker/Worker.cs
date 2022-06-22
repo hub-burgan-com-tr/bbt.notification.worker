@@ -28,7 +28,6 @@ public class Worker : BackgroundService
         logHelper = _logHelper;
     }
 
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
 
