@@ -25,52 +25,28 @@ namespace bbt.notification.worker
             TopicModel topicModel = new TopicModel();
 
 
-            try
-            {
-                var Topic_Id = Environment.GetEnvironmentVariable("Topic_Id") is null ? "10158" : Environment.GetEnvironmentVariable("Topic_Id");
-                string path = baseModel.GetTopicDetailEndpoint().Replace("{id}", Topic_Id);
-                Console.WriteLine(baseModel.GetTopicDetailEndpoint());
-                Console.WriteLine("=>>" + path);
-                HttpResponseMessage response = await ApiHelper.ApiClient.GetAsync(path);
-                if (response.IsSuccessStatusCode)
-                {
-                    topicModel = await response.Content.ReadAsAsync<TopicModel>();
-                }
-                return topicModel;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("GetTopicDetailsAsync" + e.Message);
-                return null;
-            }
-
             await _tracer.CaptureTransaction("GetTopicDetailsAsync", ApiConstants.TypeRequest, async () =>
-             {
-                 try
-                 {
+            {
+                try
+                {
+                    var Topic_Id = Environment.GetEnvironmentVariable("Topic_Id") is null ? "10158" : Environment.GetEnvironmentVariable("Topic_Id");
+                    string path = baseModel.GetTopicDetailEndpoint().Replace("{id}", Topic_Id);
+                    Console.WriteLine(baseModel.GetTopicDetailEndpoint());
+                    Console.WriteLine("=>>" + path);
+                    HttpResponseMessage response = await ApiHelper.ApiClient.GetAsync(path);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        topicModel = await response.Content.ReadAsAsync<TopicModel>();
+                    }
+                }
+                catch (Exception e)
+                {
+                    _logHelper.LogCreate(null, topicModel, MethodBase.GetCurrentMethod().Name, e.Message);
+                    _tracer.CaptureException(e);
+                    Console.WriteLine("GetTopicDetailsAsync" + e.Message);
 
-
-                     var Topic_Id = Environment.GetEnvironmentVariable("Topic_Id") is null ? "1" : Environment.GetEnvironmentVariable("Topic_Id");
-                     string path = baseModel.GetTopicDetailEndpoint().Replace("{id}", Topic_Id);
-                     Console.WriteLine(baseModel.GetTopicDetailEndpoint());
-                     Console.WriteLine("=>>" + path);
-                     HttpResponseMessage response = await ApiHelper.ApiClient.GetAsync(path);
-
-                     if (response.IsSuccessStatusCode)
-                     {
-                         topicModel = await response.Content.ReadAsAsync<TopicModel>();
-                     }
-
-
-                 }
-                 catch (Exception e)
-                 {
-                     _logHelper.LogCreate(null, topicModel, MethodBase.GetCurrentMethod().Name, e.Message);
-                     _tracer.CaptureException(e);
-                     Console.WriteLine("GetTopicDetailsAsync" + e.Message);
-
-                 }
-             });
+                }
+            });
             return topicModel;
         }
         //Static
@@ -87,39 +63,17 @@ namespace bbt.notification.worker
                     if (response.IsSuccessStatusCode)
                     {
                         consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
+                        Console.WriteLine("BAŞARILI => PostConsumerDetailAsync" + response.StatusCode + "=>" + response.RequestMessage);
                         return consumerModel;
                     }
                     else if ((int)response.StatusCode == 470)
                     {
+                        Console.WriteLine("BAŞARISIZ => PostConsumerDetailAsync" + response.StatusCode + "=>" + response.RequestMessage);
+
                         return consumerModel;
                     }
-                    return null;
-            try
-            {
-                string path = baseModel.GetConsumerDetailEndpoint();
-                HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, requestModel);
-                if (response.IsSuccessStatusCode)
-                {
-                    consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
-                    Console.WriteLine("BAŞARILI => PostConsumerDetailAsync" + response.StatusCode + "=>" + response.RequestMessage);
-
-                    return consumerModel;
-                }
-                else if ((int)response.StatusCode == 470)
-                {
                     Console.WriteLine("BAŞARISIZ => PostConsumerDetailAsync" + response.StatusCode + "=>" + response.RequestMessage);
-                    return consumerModel;
-                }
-                Console.WriteLine("BAŞARISIZ => PostConsumerDetailAsync" + response.StatusCode + "=>" + response.RequestMessage);
-
-                return null;
-
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("CATCH = > " + JsonConvert.SerializeObject(requestModel));
-                return null;
-            }
+                    return null;
                 }
                 catch (Exception e)
                 {
@@ -128,7 +82,7 @@ namespace bbt.notification.worker
                     return null;
                 }
             });
-            return consumerModel;  
+            return consumerModel;
 
         }
     }

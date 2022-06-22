@@ -17,7 +17,6 @@ namespace bbt.notification.worker
             _tracer = tracer;
             _logHelper = logHelper;
         }
-        //Static olduğu için eklenmiyor.
         public async Task<EnrichmentServiceResponseModel> GetEnrichmentServiceAsync(string path, EnrichmentServiceRequestModel topicModel)
         {
             EnrichmentServiceResponseModel responseModel = new EnrichmentServiceResponseModel();
