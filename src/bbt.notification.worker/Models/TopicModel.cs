@@ -16,6 +16,8 @@ namespace bbt.notification.worker.Models
         public string clientIdJsonPath { get; set; }
         public string kafkaUrl { get; set; }
 
+        public  string kafkaCertificate { get; set; }
+
         public List<SourceServices> ServiceUrlList { get; set; }
 
     }

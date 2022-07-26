@@ -18,7 +18,7 @@ public class Source
     public string PushServiceReference { get; set; }
     public string SmsServiceReference { get; set; }
     public string EmailServiceReference { get; set; }
-
+    public string KafkaCertificate { get; set; }
 }
 
 //TODO: Diger modellere ClientIdJsonPath eklenmeli

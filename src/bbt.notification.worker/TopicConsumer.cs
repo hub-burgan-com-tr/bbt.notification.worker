@@ -37,7 +37,7 @@ namespace bbt.notification.worker
                     JToken clientId = o.SelectToken(topicModel.clientIdJsonPath);
                     PostConsumerDetailRequestModel postConsumerDetailRequestModel = new PostConsumerDetailRequestModel();
                     postConsumerDetailRequestModel.client = Convert.ToInt32(clientId);
-                    postConsumerDetailRequestModel.sourceId = Convert.ToInt32(Environment.GetEnvironmentVariable("Topic_Id") is null ? "10158" : Environment.GetEnvironmentVariable("Topic_Id"));
+                    postConsumerDetailRequestModel.sourceId = Convert.ToInt32(Environment.GetEnvironmentVariable("Topic_Id") is null ? "1" : Environment.GetEnvironmentVariable("Topic_Id"));
                     postConsumerDetailRequestModel.jsonData = o.SelectToken("message.data").ToString();
                     postConsumerDetailRequestModel.jsonData = postConsumerDetailRequestModel.jsonData.Replace(System.Environment.NewLine, string.Empty);
                   

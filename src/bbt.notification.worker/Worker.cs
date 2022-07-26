@@ -44,7 +44,8 @@ public class Worker : BackgroundService
                     kafkaSettings.Topic = new string[] { topicModel.topic };
                     kafkaSettings.BootstrapServers = topicModel.kafkaUrl;
                     kafkaSettings.GroupId = "test12";// topicModel.title_TR;
-                    kafkaSettings.SslCaLocation = baseModel.GetKafkaCertPath();
+                   // kafkaSettings.SslCaLocation = baseModel.GetKafkaCertPath();
+                    kafkaSettings.SslCaLocation = topicModel.kafkaCertificate;
                     var consumer = new TopicConsumer(kafkaSettings, stoppingToken, tracer, logger, topicModel,logHelper);
                      await consumer.ConsumeAsync();
                 }
@@ -54,7 +55,7 @@ public class Worker : BackgroundService
                 logHelper.LogCreate(stoppingToken," ", MethodBase.GetCurrentMethod().Name, e.Message);
                 tracer.CaptureException(e);
             }
-        });
+       });
     
 
     }

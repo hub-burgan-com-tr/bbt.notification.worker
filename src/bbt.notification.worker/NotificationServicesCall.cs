@@ -29,7 +29,7 @@ namespace bbt.notification.worker
             {
                 try
                 {
-                    var Topic_Id = Environment.GetEnvironmentVariable("Topic_Id") is null ? "10158" : Environment.GetEnvironmentVariable("Topic_Id");
+                    var Topic_Id = Environment.GetEnvironmentVariable("Topic_Id") is null ? "1" : Environment.GetEnvironmentVariable("Topic_Id");
                     string path = baseModel.GetTopicDetailEndpoint().Replace("{id}", Topic_Id);
                     Console.WriteLine(baseModel.GetTopicDetailEndpoint());
                     Console.WriteLine("=>>" + path);
@@ -54,7 +54,7 @@ namespace bbt.notification.worker
         {
             BaseModel baseModel = new BaseModel();
             ConsumerModel consumerModel = new ConsumerModel();
-            await _tracer.CaptureTransaction("GetTopicDetailsAsync", ApiConstants.TypeRequest, async () =>
+            await _tracer.CaptureTransaction("PostConsumerDetailAsync", ApiConstants.TypeRequest, async () =>
             {
                 try
                 {

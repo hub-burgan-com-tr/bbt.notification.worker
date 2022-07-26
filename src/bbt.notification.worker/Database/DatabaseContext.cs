@@ -86,7 +86,8 @@ public class DatabaseContext : DbContext
                   SmsServiceReference = "",
                   EmailServiceReference = "",
                   ClientIdJsonPath="",
-                  ParentId=1
+                  ParentId=1,
+                  KafkaCertificate="x",
               });
 
             builder.Entity<Consumer>(c =>
