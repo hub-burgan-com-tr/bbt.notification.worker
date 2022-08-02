@@ -43,11 +43,13 @@ public class Worker : BackgroundService
                 {
                     kafkaSettings.Topic = new string[] { topicModel.topic };
                     kafkaSettings.BootstrapServers = topicModel.kafkaUrl;
-                    kafkaSettings.GroupId = "test12";// topicModel.title_TR;
-                   // kafkaSettings.SslCaLocation = baseModel.GetKafkaCertPath();
+                    kafkaSettings.GroupId =  topicModel.title_TR;
+                   // kafkaSettings.GroupId = "test13";
+                  //  kafkaSettings.SslCaLocation = baseModel.GetKafkaCertPath();
                     kafkaSettings.SslCaLocation = topicModel.kafkaCertificate;
                     var consumer = new TopicConsumer(kafkaSettings, stoppingToken, tracer, logger, topicModel,logHelper);
-                     await consumer.ConsumeAsync();
+           
+                await consumer.ConsumeAsync();
                 }
             }
             catch (Exception e)
@@ -55,7 +57,7 @@ public class Worker : BackgroundService
                 logHelper.LogCreate(stoppingToken," ", MethodBase.GetCurrentMethod().Name, e.Message);
                 tracer.CaptureException(e);
             }
-       });
+      });
     
 
     }

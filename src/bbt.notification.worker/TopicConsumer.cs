@@ -19,28 +19,35 @@ namespace bbt.notification.worker
         KafkaSettings _kafkaSettings,
         CancellationToken _cancellationToken,
         ITracer tracer,
-        ILogger _logger, TopicModel _topicModel,ILogHelper logHelper) : base(_kafkaSettings, _cancellationToken, _logger)
+        ILogger _logger, TopicModel _topicModel, ILogHelper logHelper) : base(_kafkaSettings, _cancellationToken, _logger)
         {
             _tracer = tracer;
             topicModel = _topicModel;
             _logHelper = logHelper;
-            
+
         }
         public override async Task<bool> Process(string model)
         {
+            
             await _tracer.CaptureTransaction("ExecuteAsync", ApiConstants.TypeRequest, async () =>
             {
                 try
-                {
+            {
 
-                    JObject o = JObject.Parse(model);
+                JObject o = JObject.Parse(model);
+                DateTime kafkaDataTime = Convert.ToDateTime(o.SelectToken("message.headers.timestamp"));
+              
+                if ( kafkaDataTime >= DateTime.Now.AddMinutes(-(topicModel.KafkaDataTime)))
+                {
                     JToken clientId = o.SelectToken(topicModel.clientIdJsonPath);
+
                     PostConsumerDetailRequestModel postConsumerDetailRequestModel = new PostConsumerDetailRequestModel();
                     postConsumerDetailRequestModel.client = Convert.ToInt32(clientId);
+
                     postConsumerDetailRequestModel.sourceId = Convert.ToInt32(Environment.GetEnvironmentVariable("Topic_Id") is null ? "1" : Environment.GetEnvironmentVariable("Topic_Id"));
                     postConsumerDetailRequestModel.jsonData = o.SelectToken("message.data").ToString();
                     postConsumerDetailRequestModel.jsonData = postConsumerDetailRequestModel.jsonData.Replace(System.Environment.NewLine, string.Empty);
-                  
+
                     if (topicModel.ServiceUrlList is not null)
                     {
                         foreach (var item in topicModel.ServiceUrlList)
@@ -50,9 +57,9 @@ namespace bbt.notification.worker
                             enrichmentServiceRequestModel.customerId = Convert.ToInt32(clientId);
                             enrichmentServiceRequestModel.dataModel = o.SelectToken("message.data").ToString();
                             enrichmentServiceRequestModel.dataModel = enrichmentServiceRequestModel.dataModel.Replace(System.Environment.NewLine, string.Empty);
-                            EnrichmentServicesCall enrichmentServicesCall = new EnrichmentServicesCall(_tracer,_logHelper);
+                            EnrichmentServicesCall enrichmentServicesCall = new EnrichmentServicesCall(_tracer, _logHelper);
                             EnrichmentServiceResponseModel enrichmentServiceResponseModel = await enrichmentServicesCall.GetEnrichmentServiceAsync(item.ServiceUrl, enrichmentServiceRequestModel);
-                            
+
                             Console.WriteLine("EnrichmentResponse=>" + JsonConvert.SerializeObject(enrichmentServiceResponseModel));
                             Console.WriteLine(item.ServiceUrl);
                             Console.WriteLine(JsonConvert.SerializeObject(enrichmentServiceResponseModel));
@@ -63,7 +70,7 @@ namespace bbt.notification.worker
                                 postConsumerDetailRequestModel.jsonData = enrichmentServiceResponseModel.dataModel;
                             }
 
-                        
+
                         }
                     }
                     Console.WriteLine("consumerRequestModel=>" + JsonConvert.SerializeObject(postConsumerDetailRequestModel));
@@ -85,19 +92,24 @@ namespace bbt.notification.worker
                     {
                         consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
                     }
-                    return true;
                 }
-                catch (Exception e)
+                else
                 {
-                    _logHelper.LogCreate(model, true, MethodBase.GetCurrentMethod().Name, e.Message);
-                    _tracer.CaptureException(e);
-                    Console.WriteLine(e.Message);
-                    return  true;
+                    //Deðerlendirilecek.
                 }
+                return true;
+            }
+            catch (Exception e)
+            {
+                _logHelper.LogCreate(model, true, MethodBase.GetCurrentMethod().Name, e.Message);
+                _tracer.CaptureException(e);
+                Console.WriteLine(e.Message);
+                return true;
+            }
             });
             return true;
         }
-               
+
 
     }
 }
