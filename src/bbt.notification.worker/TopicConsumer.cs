@@ -29,7 +29,7 @@ namespace bbt.notification.worker
         }
         public override async Task<bool> Process(string model)
         {
-            _logHelper.LogCreate(model, true, MethodBase.GetCurrentMethod().Name, ResultEnum.SUCCESS.ToString());
+           
             await _tracer.CaptureTransaction("Process", ApiConstants.TypeRequest, async () =>
             {
               
@@ -88,8 +88,7 @@ namespace bbt.notification.worker
 
                         HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, dengageRequestModel);
                         Console.WriteLine("SMS=>" + response.StatusCode);
-                        _logHelper.LogCreate(model, true, MethodBase.GetCurrentMethod().Name,ResultEnum.SUCCESS.ToString());
-                        //Buraya eklicez başarılı döndüyse kaydedidez
+                        _logHelper.LogCreate(model, true, "Process", ResultEnum.SUCCESS.ToString());
                         if (response.IsSuccessStatusCode)
                         {
                             consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
@@ -104,7 +103,7 @@ namespace bbt.notification.worker
                 }
                 catch (Exception e)
                 {
-                    _logHelper.LogCreate(model, false, MethodBase.GetCurrentMethod().Name, e.Message);
+                    _logHelper.LogCreate(model, false, "Process", e.Message);
                     _tracer.CaptureException(e);
                     Console.WriteLine(e.Message);
                     return false;

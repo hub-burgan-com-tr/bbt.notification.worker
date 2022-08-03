@@ -54,7 +54,7 @@ public class Worker : BackgroundService
             }
             catch (Exception e)
             {
-                logHelper.LogCreate(stoppingToken," ", MethodBase.GetCurrentMethod().Name, e.Message);
+                logHelper.LogCreate(stoppingToken, kafkaSettings, "ExecuteAsync", e.Message);
                 tracer.CaptureException(e);
             }
       });
