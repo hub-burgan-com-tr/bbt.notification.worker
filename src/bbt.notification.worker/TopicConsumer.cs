@@ -1,5 +1,6 @@
 using System.Reflection;
 using bbt.framework.kafka;
+using bbt.notification.worker.Enum;
 using bbt.notification.worker.Helper;
 using bbt.notification.worker.Models;
 using Elastic.Apm.Api;
@@ -28,84 +29,88 @@ namespace bbt.notification.worker
         }
         public override async Task<bool> Process(string model)
         {
-            
-            await _tracer.CaptureTransaction("ExecuteAsync", ApiConstants.TypeRequest, async () =>
+            _logHelper.LogCreate(model, true, MethodBase.GetCurrentMethod().Name, ResultEnum.SUCCESS.ToString());
+            await _tracer.CaptureTransaction("Process", ApiConstants.TypeRequest, async () =>
             {
-                try
-            {
-
-                JObject o = JObject.Parse(model);
-                DateTime kafkaDataTime = Convert.ToDateTime(o.SelectToken("message.headers.timestamp"));
               
-                if ( kafkaDataTime >= DateTime.Now.AddMinutes(-(topicModel.KafkaDataTime)))
+                try
                 {
-                    JToken clientId = o.SelectToken(topicModel.clientIdJsonPath);
 
-                    PostConsumerDetailRequestModel postConsumerDetailRequestModel = new PostConsumerDetailRequestModel();
-                    postConsumerDetailRequestModel.client = Convert.ToInt32(clientId);
+                    JObject o = JObject.Parse(model);
+                    DateTime kafkaDataTime = Convert.ToDateTime(o.SelectToken("message.headers.timestamp"));
 
-                    postConsumerDetailRequestModel.sourceId = Convert.ToInt32(Environment.GetEnvironmentVariable("Topic_Id") is null ? "1" : Environment.GetEnvironmentVariable("Topic_Id"));
-                    postConsumerDetailRequestModel.jsonData = o.SelectToken("message.data").ToString();
-                    postConsumerDetailRequestModel.jsonData = postConsumerDetailRequestModel.jsonData.Replace(System.Environment.NewLine, string.Empty);
-
-                    if (topicModel.ServiceUrlList is not null)
+                    if (kafkaDataTime >= DateTime.Now.AddMinutes(-(topicModel.KafkaDataTime)))
                     {
-                        foreach (var item in topicModel.ServiceUrlList)
+                        JToken clientId = o.SelectToken(topicModel.clientIdJsonPath);
+
+                        PostConsumerDetailRequestModel postConsumerDetailRequestModel = new PostConsumerDetailRequestModel();
+                        postConsumerDetailRequestModel.client = Convert.ToInt32(clientId);
+
+                        postConsumerDetailRequestModel.sourceId = Convert.ToInt32(Environment.GetEnvironmentVariable("Topic_Id") is null ? "1" : Environment.GetEnvironmentVariable("Topic_Id"));
+                        postConsumerDetailRequestModel.jsonData = o.SelectToken("message.data").ToString();
+                        postConsumerDetailRequestModel.jsonData = postConsumerDetailRequestModel.jsonData.Replace(System.Environment.NewLine, string.Empty);
+
+                        if (topicModel.ServiceUrlList is not null)
                         {
-
-                            EnrichmentServiceRequestModel enrichmentServiceRequestModel = new EnrichmentServiceRequestModel();
-                            enrichmentServiceRequestModel.customerId = Convert.ToInt32(clientId);
-                            enrichmentServiceRequestModel.dataModel = o.SelectToken("message.data").ToString();
-                            enrichmentServiceRequestModel.dataModel = enrichmentServiceRequestModel.dataModel.Replace(System.Environment.NewLine, string.Empty);
-                            EnrichmentServicesCall enrichmentServicesCall = new EnrichmentServicesCall(_tracer, _logHelper);
-                            EnrichmentServiceResponseModel enrichmentServiceResponseModel = await enrichmentServicesCall.GetEnrichmentServiceAsync(item.ServiceUrl, enrichmentServiceRequestModel);
-
-                            Console.WriteLine("EnrichmentResponse=>" + JsonConvert.SerializeObject(enrichmentServiceResponseModel));
-                            Console.WriteLine(item.ServiceUrl);
-                            Console.WriteLine(JsonConvert.SerializeObject(enrichmentServiceResponseModel));
-                            Console.WriteLine(JsonConvert.SerializeObject(enrichmentServiceRequestModel));
-
-                            if (enrichmentServiceResponseModel != null && !string.IsNullOrEmpty(enrichmentServiceResponseModel.dataModel))
+                            foreach (var item in topicModel.ServiceUrlList)
                             {
-                                postConsumerDetailRequestModel.jsonData = enrichmentServiceResponseModel.dataModel;
+
+                                EnrichmentServiceRequestModel enrichmentServiceRequestModel = new EnrichmentServiceRequestModel();
+                                enrichmentServiceRequestModel.customerId = Convert.ToInt32(clientId);
+                                enrichmentServiceRequestModel.dataModel = o.SelectToken("message.data").ToString();
+                                enrichmentServiceRequestModel.dataModel = enrichmentServiceRequestModel.dataModel.Replace(System.Environment.NewLine, string.Empty);
+                                EnrichmentServicesCall enrichmentServicesCall = new EnrichmentServicesCall(_tracer, _logHelper);
+                                EnrichmentServiceResponseModel enrichmentServiceResponseModel = await enrichmentServicesCall.GetEnrichmentServiceAsync(item.ServiceUrl, enrichmentServiceRequestModel);
+
+                                Console.WriteLine("EnrichmentResponse=>" + JsonConvert.SerializeObject(enrichmentServiceResponseModel));
+                                Console.WriteLine(item.ServiceUrl);
+                                Console.WriteLine(JsonConvert.SerializeObject(enrichmentServiceResponseModel));
+                                Console.WriteLine(JsonConvert.SerializeObject(enrichmentServiceRequestModel));
+
+                                if (enrichmentServiceResponseModel != null && !string.IsNullOrEmpty(enrichmentServiceResponseModel.dataModel))
+                                {
+                                    postConsumerDetailRequestModel.jsonData = enrichmentServiceResponseModel.dataModel;
+                                }
+
+
                             }
+                        }
+                        Console.WriteLine("consumerRequestModel=>" + JsonConvert.SerializeObject(postConsumerDetailRequestModel));
+                        NotificationServicesCall notificationServicesCall = new NotificationServicesCall(_tracer, _logHelper);
+                        ConsumerModel consumerModel = await notificationServicesCall.PostConsumerDetailAsync(postConsumerDetailRequestModel);
+                        Console.WriteLine("consumerresponseModel=>" + JsonConvert.SerializeObject(consumerModel));
+                        DengageRequestModel dengageRequestModel = new DengageRequestModel();
+                        string path = baseModel.GetSendSmsEndpoint();
+                        dengageRequestModel.phone.countryCode = consumerModel.consumers[0].phone.countryCode;
+                        dengageRequestModel.phone.prefix = consumerModel.consumers[0].phone.prefix;
+                        dengageRequestModel.phone.number = consumerModel.consumers[0].phone.number;
+                        dengageRequestModel.template = topicModel.smsServiceReference;
+                        dengageRequestModel.templateParams = postConsumerDetailRequestModel.jsonData;
+                        dengageRequestModel.process.name = "Notification-Cashback";
 
-
+                        HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, dengageRequestModel);
+                        Console.WriteLine("SMS=>" + response.StatusCode);
+                        _logHelper.LogCreate(model, true, MethodBase.GetCurrentMethod().Name,ResultEnum.SUCCESS.ToString());
+                        //Buraya eklicez baþarýlý döndüyse kaydedidez
+                        if (response.IsSuccessStatusCode)
+                        {
+                            consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
                         }
                     }
-                    Console.WriteLine("consumerRequestModel=>" + JsonConvert.SerializeObject(postConsumerDetailRequestModel));
-                    NotificationServicesCall notificationServicesCall = new NotificationServicesCall(_tracer, _logHelper);
-                    ConsumerModel consumerModel = await notificationServicesCall.PostConsumerDetailAsync(postConsumerDetailRequestModel);
-                    Console.WriteLine("consumerresponseModel=>" + JsonConvert.SerializeObject(consumerModel));
-                    DengageRequestModel dengageRequestModel = new DengageRequestModel();
-                    string path = baseModel.GetSendSmsEndpoint();
-                    dengageRequestModel.phone.countryCode = consumerModel.consumers[0].phone.countryCode;
-                    dengageRequestModel.phone.prefix = consumerModel.consumers[0].phone.prefix;
-                    dengageRequestModel.phone.number = consumerModel.consumers[0].phone.number;
-                    dengageRequestModel.template = topicModel.smsServiceReference;
-                    dengageRequestModel.templateParams = postConsumerDetailRequestModel.jsonData;
-                    dengageRequestModel.process.name = "Notification-Cashback";
-
-                    HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, dengageRequestModel);
-                    Console.WriteLine("SMS=>" + response.StatusCode);
-                    if (response.IsSuccessStatusCode)
+                    else
                     {
-                        consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
+                        Console.WriteLine("Kafka data is timeout");
+                        return false;
                     }
+                    return true;
                 }
-                else
+                catch (Exception e)
                 {
-                    //Deðerlendirilecek.
+                    _logHelper.LogCreate(model, false, MethodBase.GetCurrentMethod().Name, e.Message);
+                    _tracer.CaptureException(e);
+                    Console.WriteLine(e.Message);
+                    return false;
                 }
-                return true;
-            }
-            catch (Exception e)
-            {
-                _logHelper.LogCreate(model, true, MethodBase.GetCurrentMethod().Name, e.Message);
-                _tracer.CaptureException(e);
-                Console.WriteLine(e.Message);
-                return true;
-            }
             });
             return true;
         }
