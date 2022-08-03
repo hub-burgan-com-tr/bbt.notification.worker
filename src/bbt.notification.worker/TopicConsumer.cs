@@ -35,11 +35,14 @@ namespace bbt.notification.worker
               
                 try
                 {
-
+                    DateTime kafkaDataTime = DateTime.Today;
                     JObject o = JObject.Parse(model);
-                    DateTime kafkaDataTime = Convert.ToDateTime(o.SelectToken("message.headers.timestamp"));
+                    if (!String.IsNullOrEmpty(o.SelectToken("message.headers.timestamp").ToString()))
+                    {
+                        kafkaDataTime = Convert.ToDateTime(o.SelectToken("message.headers.timestamp"));
+                    }
 
-                    if (kafkaDataTime >= DateTime.Now.AddMinutes(-(topicModel.KafkaDataTime)))
+                    if (topicModel.KafkaDataTime == 0 || kafkaDataTime >= DateTime.Now.AddMinutes(-(topicModel.KafkaDataTime)))
                     {
                         JToken clientId = o.SelectToken(topicModel.clientIdJsonPath);
 
@@ -61,11 +64,6 @@ namespace bbt.notification.worker
                                 enrichmentServiceRequestModel.dataModel = enrichmentServiceRequestModel.dataModel.Replace(System.Environment.NewLine, string.Empty);
                                 EnrichmentServicesCall enrichmentServicesCall = new EnrichmentServicesCall(_tracer, _logHelper);
                                 EnrichmentServiceResponseModel enrichmentServiceResponseModel = await enrichmentServicesCall.GetEnrichmentServiceAsync(item.ServiceUrl, enrichmentServiceRequestModel);
-
-                                Console.WriteLine("EnrichmentResponse=>" + JsonConvert.SerializeObject(enrichmentServiceResponseModel));
-                                Console.WriteLine(item.ServiceUrl);
-                                Console.WriteLine(JsonConvert.SerializeObject(enrichmentServiceResponseModel));
-                                Console.WriteLine(JsonConvert.SerializeObject(enrichmentServiceRequestModel));
 
                                 if (enrichmentServiceResponseModel != null && !string.IsNullOrEmpty(enrichmentServiceResponseModel.dataModel))
                                 {
@@ -91,7 +89,7 @@ namespace bbt.notification.worker
                         HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, dengageRequestModel);
                         Console.WriteLine("SMS=>" + response.StatusCode);
                         _logHelper.LogCreate(model, true, MethodBase.GetCurrentMethod().Name,ResultEnum.SUCCESS.ToString());
-                        //Buraya eklicez baþarýlý döndüyse kaydedidez
+                        //Buraya eklicez baÅŸarÄ±lÄ± dÃ¶ndÃ¼yse kaydedidez
                         if (response.IsSuccessStatusCode)
                         {
                             consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
