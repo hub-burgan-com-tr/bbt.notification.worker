@@ -28,84 +28,82 @@ namespace bbt.notification.worker
         }
         public override async Task<bool> Process(string model)
         {
-            
+
             await _tracer.CaptureTransaction("ExecuteAsync", ApiConstants.TypeRequest, async () =>
             {
                 try
-            {
-
-                JObject o = JObject.Parse(model);
-                DateTime kafkaDataTime = Convert.ToDateTime(o.SelectToken("message.headers.timestamp"));
-              
-                if ( kafkaDataTime >= DateTime.Now.AddMinutes(-(topicModel.KafkaDataTime)))
                 {
-                    JToken clientId = o.SelectToken(topicModel.clientIdJsonPath);
-
-                    PostConsumerDetailRequestModel postConsumerDetailRequestModel = new PostConsumerDetailRequestModel();
-                    postConsumerDetailRequestModel.client = Convert.ToInt32(clientId);
-
-                    postConsumerDetailRequestModel.sourceId = Convert.ToInt32(Environment.GetEnvironmentVariable("Topic_Id") is null ? "1" : Environment.GetEnvironmentVariable("Topic_Id"));
-                    postConsumerDetailRequestModel.jsonData = o.SelectToken("message.data").ToString();
-                    postConsumerDetailRequestModel.jsonData = postConsumerDetailRequestModel.jsonData.Replace(System.Environment.NewLine, string.Empty);
-
-                    if (topicModel.ServiceUrlList is not null)
+                    DateTime kafkaDataTime = DateTime.Today;
+                    JObject o = JObject.Parse(model);
+                    if (!String.IsNullOrEmpty(o.SelectToken("message.headers.timestamp").ToString()))
                     {
-                        foreach (var item in topicModel.ServiceUrlList)
+                        kafkaDataTime = Convert.ToDateTime(o.SelectToken("message.headers.timestamp"));
+                    }
+
+                    if (topicModel.KafkaDataTime == 0 || kafkaDataTime >= DateTime.Now.AddMinutes(-(topicModel.KafkaDataTime)))
+                    {
+                        JToken clientId = o.SelectToken(topicModel.clientIdJsonPath);
+
+                        PostConsumerDetailRequestModel postConsumerDetailRequestModel = new PostConsumerDetailRequestModel();
+                        postConsumerDetailRequestModel.client = Convert.ToInt32(clientId);
+
+                        postConsumerDetailRequestModel.sourceId = Convert.ToInt32(Environment.GetEnvironmentVariable("Topic_Id") is null ? "1" : Environment.GetEnvironmentVariable("Topic_Id"));
+                        postConsumerDetailRequestModel.jsonData = o.SelectToken("message.data").ToString();
+                        postConsumerDetailRequestModel.jsonData = postConsumerDetailRequestModel.jsonData.Replace(System.Environment.NewLine, string.Empty);
+
+                        if (topicModel.ServiceUrlList is not null)
                         {
-
-                            EnrichmentServiceRequestModel enrichmentServiceRequestModel = new EnrichmentServiceRequestModel();
-                            enrichmentServiceRequestModel.customerId = Convert.ToInt32(clientId);
-                            enrichmentServiceRequestModel.dataModel = o.SelectToken("message.data").ToString();
-                            enrichmentServiceRequestModel.dataModel = enrichmentServiceRequestModel.dataModel.Replace(System.Environment.NewLine, string.Empty);
-                            EnrichmentServicesCall enrichmentServicesCall = new EnrichmentServicesCall(_tracer, _logHelper);
-                            EnrichmentServiceResponseModel enrichmentServiceResponseModel = await enrichmentServicesCall.GetEnrichmentServiceAsync(item.ServiceUrl, enrichmentServiceRequestModel);
-
-                            Console.WriteLine("EnrichmentResponse=>" + JsonConvert.SerializeObject(enrichmentServiceResponseModel));
-                            Console.WriteLine(item.ServiceUrl);
-                            Console.WriteLine(JsonConvert.SerializeObject(enrichmentServiceResponseModel));
-                            Console.WriteLine(JsonConvert.SerializeObject(enrichmentServiceRequestModel));
-
-                            if (enrichmentServiceResponseModel != null && !string.IsNullOrEmpty(enrichmentServiceResponseModel.dataModel))
+                            foreach (var item in topicModel.ServiceUrlList)
                             {
-                                postConsumerDetailRequestModel.jsonData = enrichmentServiceResponseModel.dataModel;
+
+                                EnrichmentServiceRequestModel enrichmentServiceRequestModel = new EnrichmentServiceRequestModel();
+                                enrichmentServiceRequestModel.customerId = Convert.ToInt32(clientId);
+                                enrichmentServiceRequestModel.dataModel = o.SelectToken("message.data").ToString();
+                                enrichmentServiceRequestModel.dataModel = enrichmentServiceRequestModel.dataModel.Replace(System.Environment.NewLine, string.Empty);
+                                EnrichmentServicesCall enrichmentServicesCall = new EnrichmentServicesCall(_tracer, _logHelper);
+                                EnrichmentServiceResponseModel enrichmentServiceResponseModel = await enrichmentServicesCall.GetEnrichmentServiceAsync(item.ServiceUrl, enrichmentServiceRequestModel);
+
+                                if (enrichmentServiceResponseModel != null && !string.IsNullOrEmpty(enrichmentServiceResponseModel.dataModel))
+                                {
+                                    postConsumerDetailRequestModel.jsonData = enrichmentServiceResponseModel.dataModel;
+                                }
+
+
                             }
+                        }
+                        Console.WriteLine("consumerRequestModel=>" + JsonConvert.SerializeObject(postConsumerDetailRequestModel));
+                        NotificationServicesCall notificationServicesCall = new NotificationServicesCall(_tracer, _logHelper);
+                        ConsumerModel consumerModel = await notificationServicesCall.PostConsumerDetailAsync(postConsumerDetailRequestModel);
+                        Console.WriteLine("consumerresponseModel=>" + JsonConvert.SerializeObject(consumerModel));
+                        DengageRequestModel dengageRequestModel = new DengageRequestModel();
+                        string path = baseModel.GetSendSmsEndpoint();
+                        dengageRequestModel.phone.countryCode = consumerModel.consumers[0].phone.countryCode;
+                        dengageRequestModel.phone.prefix = consumerModel.consumers[0].phone.prefix;
+                        dengageRequestModel.phone.number = consumerModel.consumers[0].phone.number;
+                        dengageRequestModel.template = topicModel.smsServiceReference;
+                        dengageRequestModel.templateParams = postConsumerDetailRequestModel.jsonData;
+                        dengageRequestModel.process.name = "Notification-Cashback";
 
-
+                        HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, dengageRequestModel);
+                        Console.WriteLine("SMS=>" + response.StatusCode);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
                         }
                     }
-                    Console.WriteLine("consumerRequestModel=>" + JsonConvert.SerializeObject(postConsumerDetailRequestModel));
-                    NotificationServicesCall notificationServicesCall = new NotificationServicesCall(_tracer, _logHelper);
-                    ConsumerModel consumerModel = await notificationServicesCall.PostConsumerDetailAsync(postConsumerDetailRequestModel);
-                    Console.WriteLine("consumerresponseModel=>" + JsonConvert.SerializeObject(consumerModel));
-                    DengageRequestModel dengageRequestModel = new DengageRequestModel();
-                    string path = baseModel.GetSendSmsEndpoint();
-                    dengageRequestModel.phone.countryCode = consumerModel.consumers[0].phone.countryCode;
-                    dengageRequestModel.phone.prefix = consumerModel.consumers[0].phone.prefix;
-                    dengageRequestModel.phone.number = consumerModel.consumers[0].phone.number;
-                    dengageRequestModel.template = topicModel.smsServiceReference;
-                    dengageRequestModel.templateParams = postConsumerDetailRequestModel.jsonData;
-                    dengageRequestModel.process.name = "Notification-Cashback";
-
-                    HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, dengageRequestModel);
-                    Console.WriteLine("SMS=>" + response.StatusCode);
-                    if (response.IsSuccessStatusCode)
+                    else
                     {
-                        consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
+                        //Deï¿½erlendirilecek.
                     }
+                    return true;
                 }
-                else
+                catch (Exception e)
                 {
-                    //Deðerlendirilecek.
+                    _logHelper.LogCreate(model, true, MethodBase.GetCurrentMethod().Name, e.Message);
+                    _tracer.CaptureException(e);
+                    Console.WriteLine(e.Message);
+                    return true;
                 }
-                return true;
-            }
-            catch (Exception e)
-            {
-                _logHelper.LogCreate(model, true, MethodBase.GetCurrentMethod().Name, e.Message);
-                _tracer.CaptureException(e);
-                Console.WriteLine(e.Message);
-                return true;
-            }
             });
             return true;
         }
