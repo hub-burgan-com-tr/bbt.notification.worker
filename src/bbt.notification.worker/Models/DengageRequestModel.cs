@@ -24,6 +24,10 @@ namespace bbt.notification.worker.Models
         public class Process
         {
             public string name { get; set; }
+
+            public string ItemId { get; set; }
+            public string Action { get; set; }
+            public string Identity { get; set; }
         }
 
     }

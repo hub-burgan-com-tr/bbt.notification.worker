@@ -32,5 +32,10 @@ namespace bbt.notification.worker.Models
         {
             return _config.GetSection("MessagingGateway:EndPoints:SendSms").Value;
         }
+
+        public string GetSendEmailEndpoint()
+        {
+            return _config.GetSection("MessagingGateway:EndPoints:SendTemplatedMail").Value;
+        }
     }
 }
