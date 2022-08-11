@@ -1,4 +1,5 @@
-﻿using System;
+﻿using bbt.notification.worker.Enum;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,4 +20,4 @@ namespace bbt.notification.worker.Models
         }
 
     }
-}
+
