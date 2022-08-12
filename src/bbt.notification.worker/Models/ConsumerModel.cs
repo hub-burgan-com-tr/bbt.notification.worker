@@ -16,7 +16,7 @@ namespace bbt.notification.worker.Models
         public bool isSmsEnabled { get; set; }
         public Phone phone { get; set; }
         public bool isEmailEnabled { get; set; }
-        public object email { get; set; }
+        public string email { get; set; } //Burasý object di .string yaptým SOR
     }
 
         public class Phone
