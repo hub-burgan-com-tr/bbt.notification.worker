@@ -22,5 +22,5 @@ FROM base AS final
 WORKDIR /app
 COPY kafka_nonprod.cer kafka_prod.cer .
 COPY --from=publish /app/publish .
-ENV Topic_Id=10170
+ENV Topic_Id=10158
 ENTRYPOINT ["dotnet", "bbt.notification.worker.dll"]
