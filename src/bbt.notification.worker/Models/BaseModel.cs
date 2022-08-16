@@ -37,5 +37,10 @@ namespace bbt.notification.worker.Models
         {
             return _config.GetSection("MessagingGateway:EndPoints:SendEmail").Value;
         }
+        public string GetSendPushnotificationEndpoint()
+        {
+            return _config.GetSection("MessagingGateway:EndPoints:SendPushNotification").Value;
+        }
+      
     }
 }

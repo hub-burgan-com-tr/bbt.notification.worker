@@ -123,10 +123,11 @@ namespace bbt.notification.worker
 
                     HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, dengageRequestModel);
                     Console.WriteLine("SMS=>" + response.StatusCode);
-                    _logHelper.LogCreate(consumerModel, true, "SendSms", ResultEnum.SUCCESS.ToString());
+                  
                     if (response.IsSuccessStatusCode)
                     {
                         consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
+                        _logHelper.LogCreate(consumerModel, true, "SendSms", ResultEnum.SUCCESS.ToString());
                     }
 
                 }
@@ -166,17 +167,63 @@ namespace bbt.notification.worker
                 emailRequestModel.Process = new DengageRequestModel.Process();
                 emailRequestModel.Process.name = "Notification-Cashback";
                 emailRequestModel.Process.ItemId ="1" ;
-                emailRequestModel.Process.Action = "";
-                emailRequestModel.Process.Identity = "";
+                emailRequestModel.Process.Action = "Notification";
+                emailRequestModel.Process.Identity = "1";
 
 
 
                 HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, emailRequestModel);
                 Console.WriteLine("EMAIL=>" + response.StatusCode);
-                _logHelper.LogCreate(consumerModel, true, "SendEmail", ResultEnum.SUCCESS.ToString());
+               
                 if (response.IsSuccessStatusCode)
                 {
                     consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
+                    _logHelper.LogCreate(consumerModel, true, "SendEmail", ResultEnum.SUCCESS.ToString());
+                }
+            }
+            catch (Exception ex)
+            {
+                _logHelper.LogCreate(consumerModel, false, "Process", ex.Message);
+                _tracer.CaptureException(ex);
+                Console.WriteLine(ex.Message);
+                return false;
+            }
+            return true;
+        }
+
+        public async Task<bool> SendPushNotification(ConsumerModel consumerModel, PostConsumerDetailRequestModel postConsumerDetailRequestModel)
+        {
+            try
+            {
+
+
+                PushNotificaitonRequestModel pushNotificationRequestModel = new PushNotificaitonRequestModel();
+                string path = baseModel.GetSendPushnotificationEndpoint();
+                if (consumerModel.consumers != null)
+                {
+                    pushNotificationRequestModel.CustomerNo = consumerModel.consumers[0].client.ToString();
+
+
+
+                }
+                // emailRequestModel.TemplateParams = postConsumerDetailRequestModel.jsonData;
+                pushNotificationRequestModel.TemplateParams = "";
+                pushNotificationRequestModel.Template = topicModel.pushServiceReference;
+                pushNotificationRequestModel.Process = new DengageRequestModel.Process();
+                pushNotificationRequestModel.Process.name = "Notification-Cashback";
+                pushNotificationRequestModel.Process.ItemId = "1";
+                pushNotificationRequestModel.Process.Action = "Notification";
+                pushNotificationRequestModel.Process.Identity = "1";
+
+
+
+                HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, pushNotificationRequestModel);
+                Console.WriteLine("PUSHNOTIFICATION=>" + response.StatusCode);
+             
+                if (response.IsSuccessStatusCode)
+                {
+                    consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
+                    _logHelper.LogCreate(consumerModel, true, "SendPushNotification", ResultEnum.SUCCESS.ToString());
                 }
             }
             catch (Exception ex)
