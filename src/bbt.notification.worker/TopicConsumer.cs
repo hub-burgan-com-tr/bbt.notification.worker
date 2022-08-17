@@ -44,7 +44,7 @@ namespace bbt.notification.worker
                     PostConsumerDetailRequestModel postConsumerDetailRequestModel = new PostConsumerDetailRequestModel();
                     postConsumerDetailRequestModel.client = Convert.ToInt32(clientId);
 
-                    postConsumerDetailRequestModel.sourceId = Convert.ToInt32(Environment.GetEnvironmentVariable("Topic_Id") is null ? "10158" : Environment.GetEnvironmentVariable("Topic_Id"));
+                    postConsumerDetailRequestModel.sourceId = Convert.ToInt32(Environment.GetEnvironmentVariable("Topic_Id") is null ? "10170" : Environment.GetEnvironmentVariable("Topic_Id"));
                     postConsumerDetailRequestModel.jsonData = o.SelectToken("message.data").ToString();
                     postConsumerDetailRequestModel.jsonData = postConsumerDetailRequestModel.jsonData.Replace(System.Environment.NewLine, string.Empty);
 
@@ -72,13 +72,13 @@ namespace bbt.notification.worker
                     NotificationServicesCall notificationServicesCall = new NotificationServicesCall(_tracer, _logHelper);
                     ConsumerModel consumerModel = await notificationServicesCall.PostConsumerDetailAsync(postConsumerDetailRequestModel);
                     Console.WriteLine("consumerresponseModel=>" + JsonConvert.SerializeObject(consumerModel));
-                    if (!String.IsNullOrEmpty(topicModel.smsServiceReference))
+                    if (!String.IsNullOrEmpty(topicModel.smsServiceReference) && topicModel.smsServiceReference != "string")
                     {
                         bool sendSms =await SendSms(o, consumerModel, postConsumerDetailRequestModel);
                      
 
                     }
-                    if (!String.IsNullOrEmpty(topicModel.emailServiceReference) )
+                    if (!String.IsNullOrEmpty(topicModel.emailServiceReference) && topicModel.emailServiceReference!="string")
                     {
                         bool sendEmail = await SendEmail(consumerModel, postConsumerDetailRequestModel);
                     }
