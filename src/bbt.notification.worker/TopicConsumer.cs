@@ -71,7 +71,7 @@ namespace bbt.notification.worker
                     
                     NotificationServicesCall notificationServicesCall = new NotificationServicesCall(_tracer, _logHelper);
                     ConsumerModel consumerModel = await notificationServicesCall.PostConsumerDetailAsync(postConsumerDetailRequestModel);
-               
+                    Console.WriteLine("ConsumerModel : " + consumerModel);
                     if (!String.IsNullOrEmpty(topicModel.smsServiceReference) && topicModel.smsServiceReference != "string")
                     {
                         bool sendSms =await SendSms(o, consumerModel, postConsumerDetailRequestModel);
@@ -105,13 +105,13 @@ namespace bbt.notification.worker
                 {
                     kafkaDataTime = Convert.ToDateTime(o.SelectToken("message.headers.timestamp"));
                 }
-
+              
                 if (topicModel.KafkaDataTime == 0 || kafkaDataTime >= DateTime.Now.AddMinutes(-(topicModel.KafkaDataTime)))
 
                 {
                     DengageRequestModel dengageRequestModel = new DengageRequestModel();
                     string path = baseModel.GetSendSmsEndpoint();
-                    if (consumerModel.consumers != null)
+                    if (consumerModel!=null && consumerModel.consumers != null)
                     {
                         dengageRequestModel.phone.countryCode = consumerModel.consumers[0].phone.countryCode;
                         dengageRequestModel.phone.prefix = consumerModel.consumers[0].phone.prefix;
@@ -123,7 +123,7 @@ namespace bbt.notification.worker
 
                     HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, dengageRequestModel);
                     Console.WriteLine("SMS=>" + response.StatusCode);
-                    _logHelper.LogCreate(response.Content, true, "SendSms_", ResultEnum.SUCCESS.ToString());
+                    _logHelper.LogCreate(response.RequestMessage, true, "SendSms_", "SmsGönderim"+" SendSmsMethod");
                     if (response.IsSuccessStatusCode)
                     {
                         consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
@@ -154,7 +154,7 @@ namespace bbt.notification.worker
 
                 EmailRequestModel emailRequestModel = new EmailRequestModel();
                 string path = baseModel.GetSendEmailEndpoint();
-                if (consumerModel.consumers != null)
+                if (consumerModel!=null && consumerModel.consumers != null)
                 {
                     emailRequestModel.CustomerNo = consumerModel.consumers[0].client;
                  
@@ -174,7 +174,7 @@ namespace bbt.notification.worker
 
                 HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, emailRequestModel);
                 Console.WriteLine("EMAIL=>" + response.StatusCode);
-               
+                _logHelper.LogCreate(response.RequestMessage, true, "SendEmail_", "SmsGönderim" + " SendSmsMethod");
                 if (response.IsSuccessStatusCode)
                 {
                     consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
