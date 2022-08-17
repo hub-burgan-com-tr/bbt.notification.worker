@@ -68,10 +68,10 @@ namespace bbt.notification.worker
 
                         }
                     }
-                    Console.WriteLine("consumerRequestModel=>" + JsonConvert.SerializeObject(postConsumerDetailRequestModel));
+                    
                     NotificationServicesCall notificationServicesCall = new NotificationServicesCall(_tracer, _logHelper);
                     ConsumerModel consumerModel = await notificationServicesCall.PostConsumerDetailAsync(postConsumerDetailRequestModel);
-                    Console.WriteLine("consumerresponseModel=>" + JsonConvert.SerializeObject(consumerModel));
+               
                     if (!String.IsNullOrEmpty(topicModel.smsServiceReference) && topicModel.smsServiceReference != "string")
                     {
                         bool sendSms =await SendSms(o, consumerModel, postConsumerDetailRequestModel);
