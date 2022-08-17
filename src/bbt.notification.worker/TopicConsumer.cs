@@ -48,7 +48,7 @@ namespace bbt.notification.worker
                     postConsumerDetailRequestModel.jsonData = o.SelectToken("message.data").ToString();
                     postConsumerDetailRequestModel.jsonData = postConsumerDetailRequestModel.jsonData.Replace(System.Environment.NewLine, string.Empty);
 
-                    if (topicModel.ServiceUrlList is not null)
+                    if (topicModel.ServiceUrlList.Count>0)
                     {
                         foreach (var item in topicModel.ServiceUrlList)
                         {
@@ -123,7 +123,7 @@ namespace bbt.notification.worker
 
                     HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, dengageRequestModel);
                     Console.WriteLine("SMS=>" + response.StatusCode);
-                  
+                    _logHelper.LogCreate(response.Content, true, "SendSms_", ResultEnum.SUCCESS.ToString());
                     if (response.IsSuccessStatusCode)
                     {
                         consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
