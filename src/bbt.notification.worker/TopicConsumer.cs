@@ -71,7 +71,7 @@ namespace bbt.notification.worker
                     
                     NotificationServicesCall notificationServicesCall = new NotificationServicesCall(_tracer, _logHelper);
                     ConsumerModel consumerModel = await notificationServicesCall.PostConsumerDetailAsync(postConsumerDetailRequestModel);
-                    Console.WriteLine("ConsumerModel : " + consumerModel);
+                    Console.WriteLine(consumerModel);
                     if (!String.IsNullOrEmpty(topicModel.smsServiceReference) && topicModel.smsServiceReference != "string")
                     {
                         bool sendSms =await SendSms(o, consumerModel, postConsumerDetailRequestModel);
@@ -174,7 +174,7 @@ namespace bbt.notification.worker
 
                 HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, emailRequestModel);
                 Console.WriteLine("EMAIL=>" + response.StatusCode);
-                _logHelper.LogCreate(response.RequestMessage, true, "SendEmail_", "SmsGönderim" + " SendSmsMethod");
+                _logHelper.LogCreate(response.RequestMessage, true, "SendEmail_", "EmailGönderim" + " SendEmailMethod");
                 if (response.IsSuccessStatusCode)
                 {
                     consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
