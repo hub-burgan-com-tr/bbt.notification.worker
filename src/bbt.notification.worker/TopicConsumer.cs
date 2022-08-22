@@ -44,7 +44,7 @@ namespace bbt.notification.worker
 
                     PostConsumerDetailRequestModel postConsumerDetailRequestModel = new PostConsumerDetailRequestModel();
                     postConsumerDetailRequestModel.client = Convert.ToInt32(clientId);
-                    postConsumerDetailRequestModel.sourceId = Convert.ToInt32(Environment.GetEnvironmentVariable("Topic_Id") is null ? "10158" : Environment.GetEnvironmentVariable("Topic_Id"));
+                    postConsumerDetailRequestModel.sourceId = Convert.ToInt32(Environment.GetEnvironmentVariable("Topic_Id") is null ? "10187" : Environment.GetEnvironmentVariable("Topic_Id"));
                     postConsumerDetailRequestModel.jsonData = o.SelectToken("message.data").ToString();
                     postConsumerDetailRequestModel.jsonData = postConsumerDetailRequestModel.jsonData.Replace(System.Environment.NewLine, string.Empty);
 
@@ -160,8 +160,6 @@ namespace bbt.notification.worker
                 if (consumerModel != null && consumerModel.consumers != null && consumerModel.consumers != null && consumerModel.consumers.Count > 0)
                 {
                     emailRequestModel.CustomerNo = consumerModel.consumers[0].client;
-
-
                     emailRequestModel.Email = consumerModel.consumers[0].email;
 
                     Console.WriteLine(consumerModel.consumers[0].email);
@@ -179,7 +177,7 @@ namespace bbt.notification.worker
 
 
                 HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, emailRequestModel);
-                Console.WriteLine("EMAIL=>" + response.StatusCode +"" + emailRequestModel);
+                Console.WriteLine("EMAIL=>" + response.StatusCode +"" + emailRequestModel.Email);
                 _logHelper.LogCreate(response.StatusCode, emailRequestModel, "SendEmail_", "EmailGönderim" + " SendEmailMethod");
                 if (response.IsSuccessStatusCode)
                 {
