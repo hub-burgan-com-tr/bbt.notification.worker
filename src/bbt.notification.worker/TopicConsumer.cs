@@ -44,7 +44,7 @@ namespace bbt.notification.worker
 
                     PostConsumerDetailRequestModel postConsumerDetailRequestModel = new PostConsumerDetailRequestModel();
                     postConsumerDetailRequestModel.client = Convert.ToInt32(clientId);
-                    postConsumerDetailRequestModel.sourceId = Convert.ToInt32(Environment.GetEnvironmentVariable("Topic_Id") is null ? "10187" : Environment.GetEnvironmentVariable("Topic_Id"));
+                    postConsumerDetailRequestModel.sourceId = Convert.ToInt32(Environment.GetEnvironmentVariable("Topic_Id") is null ? "10158" : Environment.GetEnvironmentVariable("Topic_Id"));
                     postConsumerDetailRequestModel.jsonData = o.SelectToken("message.data").ToString();
                     postConsumerDetailRequestModel.jsonData = postConsumerDetailRequestModel.jsonData.Replace(System.Environment.NewLine, string.Empty);
 
@@ -117,7 +117,7 @@ namespace bbt.notification.worker
                         dengageRequestModel.phone.prefix = consumerModel.consumers[0].phone.prefix;
                         dengageRequestModel.phone.number = consumerModel.consumers[0].phone.number;
                         Console.WriteLine(consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number);
-                        _logHelper.LogCreate(consumerModel, consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number, "SmsPhone","");
+                     //   _logHelper.LogCreate(consumerModel, consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number, "SmsPhone","");
                     }
                     
                     dengageRequestModel.template = topicModel.smsServiceReference;
@@ -126,11 +126,11 @@ namespace bbt.notification.worker
 
                     HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, dengageRequestModel);
                     Console.WriteLine("SMS1=>" + response.StatusCode);
-                    _logHelper.LogCreate(response.StatusCode, true, "SendSms_", "SmsGönderim" + " SendSmsMethod");
+                    _logHelper.LogCreate(consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number + " RequestData: " + JsonConvert.SerializeObject(dengageRequestModel) : null, response.StatusCode, "SendSms", response.StatusCode.ToString());
+                  //  _logHelper.LogCreate(response.StatusCode, true, "SendSms_", "SmsGönderim" + " SendSmsMethod");
                     if (response.IsSuccessStatusCode)
                     {
                         consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
-                        _logHelper.LogCreate(consumerModel, true, "SendSms", ResultEnum.SUCCESS.ToString());
                     }
 
                 }
@@ -163,7 +163,7 @@ namespace bbt.notification.worker
                     emailRequestModel.Email = consumerModel.consumers[0].email;
 
                     Console.WriteLine(consumerModel.consumers[0].email);
-                    _logHelper.LogCreate(consumerModel, consumerModel.consumers[0].email, "Email", "");
+                  //  _logHelper.LogCreate(consumerModel, consumerModel.consumers[0].email, "Email", "");
                 }
                  emailRequestModel.TemplateParams = postConsumerDetailRequestModel.jsonData;
                // emailRequestModel.TemplateParams = "";
@@ -178,11 +178,13 @@ namespace bbt.notification.worker
 
                 HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, emailRequestModel);
                 Console.WriteLine("EMAIL=>" + response.StatusCode +"" + emailRequestModel.Email);
-                _logHelper.LogCreate(response.StatusCode, emailRequestModel, "SendEmail_", "EmailGönderim" + " SendEmailMethod");
+                _logHelper.LogCreate(consumerModel.consumers[0] != null ? consumerModel.consumers[0].email +"RequestData:" + JsonConvert.SerializeObject(emailRequestModel) : null , response.StatusCode, "SendEmail", response.StatusCode.ToString());
+
+                //_logHelper.LogCreate(response.StatusCode, emailRequestModel, "SendEmail_", "EmailGönderim" + " SendEmailMethod");
                 if (response.IsSuccessStatusCode)
                 {
                     consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
-                    _logHelper.LogCreate(response.StatusCode, true, "SendEmail", ResultEnum.SUCCESS.ToString());
+                  //  _logHelper.LogCreate(response.StatusCode, true, "SendEmail", ResultEnum.SUCCESS.ToString());
                 }
             }
             catch (Exception ex)
