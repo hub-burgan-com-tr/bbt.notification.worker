@@ -64,16 +64,17 @@ namespace bbt.notification.worker
                     {
                         consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
                         Console.WriteLine("BAŞARILI => PostConsumerDetailAsync" + response.StatusCode + "=>" + response.RequestMessage);
-                        _logHelper.LogCreate(requestModel,"SUCCESS"+ consumerModel, "PostConsumerDetailAsync","SUCCESS");
+                        _logHelper.LogCreate(requestModel,"SUCCESS "+ JsonConvert.SerializeObject(consumerModel, Formatting.Indented), "PostConsumerDetailAsync","SUCCESS");
                         return consumerModel;
                     }
                     else if ((int)response.StatusCode == 470)
                     {
                         Console.WriteLine("BAŞARISIZ => PostConsumerDetailAsync" + response.StatusCode + "=>" + response.RequestMessage);
-                        _logHelper.LogCreate(requestModel, "BAŞARISIZ" + consumerModel, "PostConsumerDetailAsync", "470CODE-BAŞARISIZ");
+                        _logHelper.LogCreate(requestModel, "BAŞARISIZ" + JsonConvert.SerializeObject(consumerModel, Formatting.Indented), "PostConsumerDetailAsync", "470CODE-BAŞARISIZ");
                         return consumerModel;
                     }
                     Console.WriteLine("BAŞARISIZ => PostConsumerDetailAsync" + response.StatusCode + "=>" + response.RequestMessage);
+                    _logHelper.LogCreate(requestModel, "BAŞARISIZ " + JsonConvert.SerializeObject(consumerModel, Formatting.Indented), "PostConsumerDetailAsync", "BAŞARISIZ");
                     return null;
                 }
                 catch (Exception e)

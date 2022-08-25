@@ -126,7 +126,7 @@ namespace bbt.notification.worker
 
                     HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, dengageRequestModel);
                     Console.WriteLine("SMS1=>" + response.StatusCode);
-                    _logHelper.LogCreate(consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number + " RequestData: " + JsonConvert.SerializeObject(dengageRequestModel) : null, response.StatusCode, "SendSms", response.StatusCode.ToString());
+                    _logHelper.LogCreate(consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number + " RequestData: " + JsonConvert.SerializeObject(dengageRequestModel, Formatting.Indented) : null, response.StatusCode, "SendSms", response.StatusCode.ToString());
                   //  _logHelper.LogCreate(response.StatusCode, true, "SendSms_", "SmsGönderim" + " SendSmsMethod");
                     if (response.IsSuccessStatusCode)
                     {
@@ -178,7 +178,7 @@ namespace bbt.notification.worker
 
                 HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, emailRequestModel);
                 Console.WriteLine("EMAIL=>" + response.StatusCode +"" + emailRequestModel.Email);
-                _logHelper.LogCreate(consumerModel.consumers[0] != null ? consumerModel.consumers[0].email +"RequestData:" + JsonConvert.SerializeObject(emailRequestModel) : null , response.StatusCode, "SendEmail", response.StatusCode.ToString());
+                _logHelper.LogCreate(consumerModel.consumers[0] != null ? consumerModel.consumers[0].email +"RequestData:" + JsonConvert.SerializeObject(emailRequestModel,Formatting.Indented) : null , response.StatusCode, "SendEmail", response.StatusCode.ToString());
 
                 //_logHelper.LogCreate(response.StatusCode, emailRequestModel, "SendEmail_", "EmailGönderim" + " SendEmailMethod");
                 if (response.IsSuccessStatusCode)
@@ -212,8 +212,8 @@ namespace bbt.notification.worker
 
 
                 }
-                // emailRequestModel.TemplateParams = postConsumerDetailRequestModel.jsonData;
-                pushNotificationRequestModel.TemplateParams = "";
+                pushNotificationRequestModel.TemplateParams = postConsumerDetailRequestModel.jsonData;
+            //    pushNotificationRequestModel.TemplateParams = "";
                 pushNotificationRequestModel.Template = topicModel.pushServiceReference;
                 pushNotificationRequestModel.Process = new DengageRequestModel.Process();
                 pushNotificationRequestModel.Process.name = "Notification-Cashback";
@@ -225,11 +225,12 @@ namespace bbt.notification.worker
 
                 HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, pushNotificationRequestModel);
                 Console.WriteLine("PUSHNOTIFICATION=>" + response.StatusCode);
+                _logHelper.LogCreate(consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number + " RequestData: " + JsonConvert.SerializeObject(pushNotificationRequestModel, Formatting.Indented) : null, response.StatusCode, "SendSms", response.StatusCode.ToString());
 
                 if (response.IsSuccessStatusCode)
                 {
                     consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
-                    _logHelper.LogCreate(consumerModel, true, "SendPushNotification", ResultEnum.SUCCESS.ToString());
+                  
                 }
             }
             catch (Exception ex)
