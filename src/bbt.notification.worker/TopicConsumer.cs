@@ -40,7 +40,7 @@ namespace bbt.notification.worker
                     JObject o = JObject.Parse(model);
 
                     JToken clientId = o.SelectToken(topicModel.clientIdJsonPath);
-                    //if(clientId!=null |)
+                  
 
                     PostConsumerDetailRequestModel postConsumerDetailRequestModel = new PostConsumerDetailRequestModel();
                     postConsumerDetailRequestModel.client = Convert.ToInt32(clientId);
@@ -80,7 +80,7 @@ namespace bbt.notification.worker
                     }
                     if (!String.IsNullOrEmpty(topicModel.emailServiceReference) && topicModel.emailServiceReference != "string")
                     {
-                        bool sendEmail = await SendEmail(consumerModel, postConsumerDetailRequestModel);
+                        bool sendEmail = await SendEmail(o,consumerModel, postConsumerDetailRequestModel);
                     }
 
 
@@ -135,9 +135,10 @@ namespace bbt.notification.worker
                     }
                     else
                     {
-                        _logHelper.LogCreate(consumerModel, false, "SendSms", "Consumer null");
+                        JToken clientId = o.SelectToken(topicModel.clientIdJsonPath);
+                        _logHelper.LogCreate(Convert.ToInt32(clientId), false, "SendSms", "Consumer null");
 
-                        Console.WriteLine("Consumer null");
+                        Console.WriteLine(Convert.ToInt32(clientId) + "Consumer null");
                         return false;
                     }
 
@@ -157,7 +158,7 @@ namespace bbt.notification.worker
                 return false;
             }
         }
-        public async Task<bool> SendEmail(ConsumerModel consumerModel, PostConsumerDetailRequestModel postConsumerDetailRequestModel)
+        public async Task<bool> SendEmail(JObject o,ConsumerModel consumerModel, PostConsumerDetailRequestModel postConsumerDetailRequestModel)
         {
             try
             {
@@ -198,9 +199,9 @@ namespace bbt.notification.worker
                 }
                 else
                 {
-                    _logHelper.LogCreate("consumerModel", false, "SendEmail", "Consumer null");
-              
-                    Console.WriteLine("Consumer null");
+                    JToken clientId = o.SelectToken(topicModel.clientIdJsonPath);
+                    _logHelper.LogCreate(Convert.ToInt32(clientId), false, "SendEmail", "Consumer null");
+                    Console.WriteLine(Convert.ToInt32(clientId) + "Consumer null");
                     return false;
                 }
             }
