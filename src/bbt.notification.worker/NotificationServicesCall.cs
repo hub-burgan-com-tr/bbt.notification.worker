@@ -5,6 +5,7 @@ using Elastic.Apm.Api;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Reflection;
+using System.Web;
 
 namespace bbt.notification.worker
 {
@@ -12,12 +13,14 @@ namespace bbt.notification.worker
     {
         private readonly ITracer _tracer;
         private readonly ILogHelper _logHelper;
+        private readonly IConfiguration _configuration;
         public NotificationServicesCall(
-        ITracer tracer, ILogHelper logHelper
+        ITracer tracer, ILogHelper logHelper, IConfiguration configuration
       )
         {
             _tracer = tracer;
             _logHelper = logHelper;
+            _configuration = configuration;
         }
         public async Task<TopicModel> GetTopicDetailsAsync()
         {
@@ -29,7 +32,7 @@ namespace bbt.notification.worker
             {
                 try
                 {
-                    var Topic_Id = Environment.GetEnvironmentVariable("Topic_Id") is null ? "10158" : Environment.GetEnvironmentVariable("Topic_Id");
+                    var Topic_Id = Environment.GetEnvironmentVariable("Topic_Id") is null ? (_configuration.GetSection("TopicId").Value) : Environment.GetEnvironmentVariable("Topic_Id");
                     string path = baseModel.GetTopicDetailEndpoint().Replace("{id}", Topic_Id);
                     Console.WriteLine(baseModel.GetTopicDetailEndpoint());
                     Console.WriteLine("=>>" + path);
@@ -64,17 +67,17 @@ namespace bbt.notification.worker
                     {
                         consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
                         Console.WriteLine("BAŞARILI => PostConsumerDetailAsync" + response.StatusCode + "=>" + response.RequestMessage);
-                        _logHelper.LogCreate(requestModel,"SUCCESS "+ JsonConvert.SerializeObject(consumerModel, Formatting.Indented), "PostConsumerDetailAsync","SUCCESS");
+                        _logHelper.LogCreate(requestModel,consumerModel, "PostConsumerDetailAsync","BAŞARILI");
                         return consumerModel;
                     }
                     else if ((int)response.StatusCode == 470)
                     {
                         Console.WriteLine("BAŞARISIZ => PostConsumerDetailAsync" + response.StatusCode + "=>" + response.RequestMessage);
-                        _logHelper.LogCreate(requestModel, "BAŞARISIZ" + JsonConvert.SerializeObject(consumerModel, Formatting.Indented), "PostConsumerDetailAsync", "470CODE-BAŞARISIZ");
+                        _logHelper.LogCreate(requestModel,  consumerModel, "PostConsumerDetailAsync", "470CODE-BAŞARISIZ");
                         return consumerModel;
                     }
                     Console.WriteLine("BAŞARISIZ => PostConsumerDetailAsync" + response.StatusCode + "=>" + response.RequestMessage);
-                    _logHelper.LogCreate(requestModel, "BAŞARISIZ " + JsonConvert.SerializeObject(consumerModel, Formatting.Indented), "PostConsumerDetailAsync", "BAŞARISIZ");
+                    _logHelper.LogCreate(requestModel, consumerModel, "PostConsumerDetailAsync", "BAŞARISIZ");
                     return null;
                 }
                 catch (Exception e)

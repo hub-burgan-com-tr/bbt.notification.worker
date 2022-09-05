@@ -13,19 +13,21 @@ public class Worker : BackgroundService
     private readonly ILogger<Worker> logger;
     private readonly KafkaSettings kafkaSettings;
     private readonly ITracer tracer;
+    private readonly IConfiguration _configuration;
     BaseModel baseModel = new BaseModel();
     private readonly ILogHelper logHelper;
     public Worker(
 
     ILogger<Worker> _logger,
     IOptions<KafkaSettings> _options,
-    ITracer _tracer,ILogHelper _logHelper
+    ITracer _tracer,ILogHelper _logHelper, IConfiguration configuration
     )
     {
         logger = _logger;
         kafkaSettings = _options.Value;
         tracer = _tracer;
         logHelper = _logHelper;
+        _configuration = configuration;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -37,7 +39,7 @@ public class Worker : BackgroundService
             {
                 logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
                 ApiHelper.InitializeClient();
-                NotificationServicesCall serviceCall = new NotificationServicesCall(tracer,logHelper);
+                NotificationServicesCall serviceCall = new NotificationServicesCall(tracer,logHelper,_configuration);
                 TopicModel topicModel = await serviceCall.GetTopicDetailsAsync();
                 if (topicModel != null)
                 {
@@ -47,7 +49,7 @@ public class Worker : BackgroundService
                    // kafkaSettings.GroupId = "test13";
                   //  kafkaSettings.SslCaLocation = baseModel.GetKafkaCertPath();
                     kafkaSettings.SslCaLocation = topicModel.kafkaCertificate;
-                    var consumer = new TopicConsumer(kafkaSettings, stoppingToken, tracer, logger, topicModel,logHelper);
+                    var consumer = new TopicConsumer(kafkaSettings, stoppingToken, tracer, logger, topicModel,logHelper, _configuration);
            
                 await consumer.ConsumeAsync();
                 }

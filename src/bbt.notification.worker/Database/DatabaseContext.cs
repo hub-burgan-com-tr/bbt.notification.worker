@@ -9,7 +9,7 @@ public class DatabaseContext : DbContext
         public DbSet<Consumer> Consumers { get; set; }
         public DbSet<SourceService> SourceServices { get; set; }
         public DbSet<Log> Logs { get; set; }
-        public DbSet<LogDetail> LogDetails { get; set; }
+        public DbSet<MessageNotificationLog> MessageNotificationLogs { get; set; }
         public string DbPath { get; private set; }
         public DatabaseContext()
         {
@@ -141,7 +141,7 @@ public class DatabaseContext : DbContext
                         .Property(f => f.Id)
                         .ValueGeneratedOnAdd();
 
-            builder.Entity<LogDetail>()
+            builder.Entity<MessageNotificationLog>()
                       .Property(f => f.Id)
                       .ValueGeneratedOnAdd();
 

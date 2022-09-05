@@ -1,4 +1,6 @@
-﻿namespace bbt.notification.worker.Helper
+﻿using Newtonsoft.Json;
+
+namespace bbt.notification.worker.Helper
 {
     public class LogHelper : ILogHelper
     {
@@ -7,43 +9,78 @@
 
             using (var db = new DatabaseContext())
             {
-                using (var transaction = db.Database.BeginTransaction())
+                //using (var transaction = db.Database.BeginTransaction())
+                //{
+                try
                 {
-                    try
+                    db.Add(new Log
                     {
-                        db.Add(new Log
-                        {
-                            ServiceName = methodName,
-                            ProjectName = System.Reflection.Assembly.GetEntryAssembly().GetName().Name
-                        });
+                        ServiceName = methodName,
+                        ProjectName = System.Reflection.Assembly.GetEntryAssembly().GetName().Name,
+                        ErrorDate = DateTime.Now,
+                        ErrorMessage = errorMessage,
+                        RequestData = JsonConvert.SerializeObject(requestModel),
+                        ResponseData = JsonConvert.SerializeObject(responseModel)
+                    });
 
-                        db.SaveChanges();
+                    db.SaveChanges();
 
-                        int logId = db.Logs.OrderByDescending(u => u.Id).FirstOrDefault().Id;
+                    //int logId = db.Logs.OrderByDescending(u => u.Id).FirstOrDefault().Id;
 
-                        db.Add(new LogDetail
-                        {
-                            LogId = logId,
-                            RequestData = System.Text.Json.JsonSerializer.Serialize(requestModel),
-                            ResponseData = System.Text.Json.JsonSerializer.Serialize(responseModel),
-                            RequestDate=DateTime.Now,
-                            ErrorMessage = errorMessage
-                        });
-                        db.SaveChanges();
+                    //db.Add(new MessageNotificationLog
+                    //{
+                    //    LogId = logId,
+                    //    RequestData = System.Text.Json.JsonSerializer.Serialize(requestModel),
+                    //    ResponseData = System.Text.Json.JsonSerializer.Serialize(responseModel),
+                    //    RequestDate=DateTime.Now,
+                    //    ErrorMessage = errorMessage
+                    //});
+                    //db.SaveChanges();
 
-                        transaction.Commit();
-                    }
+                    //transaction.Commit();
+                    return true;
+                }
 
-                    catch (Exception e)
-                    {
-                        transaction.Rollback();
-                        return false;
-                    }
+                catch (Exception e)
+                {
+                    //  transaction.Rollback();
+                    return false;
                 }
             }
+        }
 
-            return true;
+        public bool MessageNotificationLogCreate(long CustomerNo, int SourceId, string PhoneNumber, string Email, object requestModel, object responseModel, int NotificationType, string ResponseMessage)
+        {
 
+            using (var db = new DatabaseContext())
+            {
+                //using (var transaction = db.Database.BeginTransaction())
+                //{
+                try
+                {
+                    db.Add(new MessageNotificationLog
+                    {
+                        CustomerNo = CustomerNo,
+                        SourceId = SourceId,
+                        PhoneNumber = PhoneNumber,
+                        Email = Email,
+                        ResponseMessage = ResponseMessage,
+                        CreateDate = DateTime.Now,
+                        NotificationType = NotificationType,
+                        RequestData = JsonConvert.SerializeObject(requestModel),
+                        ResponseData = JsonConvert.SerializeObject(responseModel)
+                    });
+
+                    db.SaveChanges();
+                    return true;
+                }
+
+                catch (Exception e)
+                {
+                    //  transaction.Rollback();
+                    return false;
+                }
+            }
         }
     }
 }
