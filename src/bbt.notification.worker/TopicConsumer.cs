@@ -83,7 +83,10 @@ namespace bbt.notification.worker
                     {
                         bool sendEmail = await SendEmail(o,consumerModel, postConsumerDetailRequestModel);
                     }
-
+                    if (!String.IsNullOrEmpty(topicModel.pushServiceReference) && topicModel.pushServiceReference != "string")
+                    {
+                        bool sendPushNotfication = await SendPushNotification(consumerModel, postConsumerDetailRequestModel);
+                    }
 
                     return true;
                 }
@@ -175,10 +178,8 @@ namespace bbt.notification.worker
                     emailRequestModel.Email = consumerModel.consumers[0].email;
 
                     Console.WriteLine(consumerModel.consumers[0].email);
-                    //  _logHelper.LogCreate(consumerModel, consumerModel.consumers[0].email, "Email", "");
-
+                    
                     emailRequestModel.TemplateParams = postConsumerDetailRequestModel.jsonData;
-                    // emailRequestModel.TemplateParams = "";
                     emailRequestModel.Template = topicModel.emailServiceReference;
                     emailRequestModel.Process = new DengageRequestModel.Process();
                     emailRequestModel.Process.name = "Notification-Cashback";
@@ -186,18 +187,14 @@ namespace bbt.notification.worker
                     emailRequestModel.Process.Action = "Notification";
                     emailRequestModel.Process.Identity = "1";
 
-
-
                     HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, emailRequestModel);
                     Console.WriteLine("EMAIL=>" + response.StatusCode + "" + emailRequestModel.Email);
                     _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId,"", consumerModel.consumers[0] != null ? consumerModel.consumers[0].email:null, emailRequestModel, response, NotificationTypeEnum.EMAIL.GetHashCode(), response.StatusCode.ToString());
 
-                  //  _logHelper.LogCreate(consumerModel.consumers[0] != null ? consumerModel.consumers[0].email + "RequestData:" + JsonConvert.SerializeObject(emailRequestModel, Formatting.Indented) : null, response.StatusCode, "SendEmail", response.StatusCode.ToString());
 
                     if (response.IsSuccessStatusCode)
                     {
                         consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
-                        //  _logHelper.LogCreate(response.StatusCode, true, "SendEmail", ResultEnum.SUCCESS.ToString());
                     }
                 }
                 else
