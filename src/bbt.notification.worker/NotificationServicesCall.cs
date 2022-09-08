@@ -1,3 +1,4 @@
+using bbt.notification.worker.Enum;
 using bbt.notification.worker.Helper;
 using bbt.notification.worker.Models;
 using Elastic.Apm;
@@ -37,9 +38,15 @@ namespace bbt.notification.worker
                     Console.WriteLine(baseModel.GetTopicDetailEndpoint());
                     Console.WriteLine("=>>" + path);
                     HttpResponseMessage response = await ApiHelper.ApiClient.GetAsync(path);
+                 
                     if (response.IsSuccessStatusCode)
                     {
                         topicModel = await response.Content.ReadAsAsync<TopicModel>();
+                    }
+                   
+                    else if(response.StatusCode.ToString()== EnumHelper.GetDescription<StatusCodeEnum>(StatusCodeEnum.StatusCode460))
+                    {
+                        _logHelper.LogCreate(Topic_Id, topicModel, "GetTopicDetailsAsync", StructStatusCode.StatusCode460.ToString());
                     }
                 }
                 catch (Exception e)
@@ -70,7 +77,7 @@ namespace bbt.notification.worker
                         _logHelper.LogCreate(requestModel,consumerModel, "PostConsumerDetailAsync","BAŞARILI");
                         return consumerModel;
                     }
-                    else if ((int)response.StatusCode == 470)
+                    else if (response.StatusCode.ToString() == EnumHelper.GetDescription<StatusCodeEnum>(StatusCodeEnum.StatusCode470))
                     {
                         Console.WriteLine("BAŞARISIZ => PostConsumerDetailAsync" + response.StatusCode + "=>" + response.RequestMessage);
                         _logHelper.LogCreate(requestModel,  consumerModel, "PostConsumerDetailAsync", "470CODE-BAŞARISIZ");
