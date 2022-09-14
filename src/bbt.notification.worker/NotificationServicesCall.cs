@@ -25,12 +25,13 @@ namespace bbt.notification.worker
         }
         public async Task<TopicModel> GetTopicDetailsAsync()
         {
+
             BaseModel baseModel = new BaseModel();
             TopicModel topicModel = new TopicModel();
 
-
             await _tracer.CaptureTransaction("GetTopicDetailsAsync", ApiConstants.TypeRequest, async () =>
             {
+              
                 try
                 {
                     var Topic_Id = Environment.GetEnvironmentVariable("Topic_Id") is null ? (_configuration.GetSection("TopicId").Value) : Environment.GetEnvironmentVariable("Topic_Id");
@@ -41,19 +42,28 @@ namespace bbt.notification.worker
                  
                     if (response.IsSuccessStatusCode)
                     {
-                        topicModel = await response.Content.ReadAsAsync<TopicModel>();
+                         topicModel = await response.Content.ReadAsAsync<TopicModel>();
+                        return topicModel;
                     }
                    
                     else if(response.StatusCode.ToString()== EnumHelper.GetDescription<StatusCodeEnum>(StatusCodeEnum.StatusCode460))
                     {
+                        Console.WriteLine(Topic_Id + " topic not found");
                         _logHelper.LogCreate(Topic_Id, topicModel, "GetTopicDetailsAsync", StructStatusCode.StatusCode460.ToString());
+                        return topicModel = null;
+                        // return await Task.FromResult<TopicModel>(null);
+
+
                     }
+                    return topicModel;
+              
                 }
                 catch (Exception e)
                 {
                     _logHelper.LogCreate(null, topicModel, "GetTopicDetailsAsync", e.Message);
                     _tracer.CaptureException(e);
                     Console.WriteLine("GetTopicDetailsAsync" + e.Message);
+                    return topicModel = null;
 
                 }
            });
@@ -85,13 +95,13 @@ namespace bbt.notification.worker
                     }
                     Console.WriteLine("BAŞARISIZ => PostConsumerDetailAsync" + response.StatusCode + "=>" + response.RequestMessage);
                     _logHelper.LogCreate(requestModel, consumerModel, "PostConsumerDetailAsync", "BAŞARISIZ");
-                    return null;
+                    return consumerModel = null;
                 }
                 catch (Exception e)
                 {
                     _logHelper.LogCreate(requestModel, consumerModel, "PostConsumerDetailAsync", e.Message);
                     Console.WriteLine("CATCH = > " + JsonConvert.SerializeObject(requestModel));
-                    return null;
+                    return consumerModel=null;
                 }
             });
             return consumerModel;

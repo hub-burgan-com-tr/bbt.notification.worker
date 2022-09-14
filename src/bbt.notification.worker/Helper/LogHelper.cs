@@ -1,16 +1,20 @@
-﻿using Newtonsoft.Json;
+﻿using Elastic.Apm.Api;
+using Newtonsoft.Json;
 
 namespace bbt.notification.worker.Helper
 {
     public class LogHelper : ILogHelper
     {
+        private readonly ITracer _tracer;
+        public LogHelper(ITracer tracer)
+        {
+            _tracer = tracer;
+        }
         public bool LogCreate(object requestModel, object responseModel, string methodName, string errorMessage)
         {
-
+            var span = _tracer.CurrentTransaction?.StartSpan("LogCreateSpan", "LogCreate");
             using (var db = new DatabaseContext())
             {
-                //using (var transaction = db.Database.BeginTransaction())
-                //{
                 try
                 {
                     db.Add(new Log
@@ -25,25 +29,14 @@ namespace bbt.notification.worker.Helper
 
                     db.SaveChanges();
 
-                    //int logId = db.Logs.OrderByDescending(u => u.Id).FirstOrDefault().Id;
-
-                    //db.Add(new MessageNotificationLog
-                    //{
-                    //    LogId = logId,
-                    //    RequestData = System.Text.Json.JsonSerializer.Serialize(requestModel),
-                    //    ResponseData = System.Text.Json.JsonSerializer.Serialize(responseModel),
-                    //    RequestDate=DateTime.Now,
-                    //    ErrorMessage = errorMessage
-                    //});
-                    //db.SaveChanges();
-
-                    //transaction.Commit();
                     return true;
+                    
                 }
 
                 catch (Exception e)
                 {
-                    //  transaction.Rollback();
+                    Console.WriteLine("DB ERROR =>" + e.Message);
+                    span?.CaptureException(e);
                     return false;
                 }
             }
@@ -51,11 +44,9 @@ namespace bbt.notification.worker.Helper
 
         public bool MessageNotificationLogCreate(long CustomerNo, int SourceId, string PhoneNumber, string Email, object requestModel, object responseModel, int NotificationType, string ResponseMessage)
         {
-
+            var span = _tracer.CurrentTransaction?.StartSpan("MessageNotificationLogCreateSpan", "MessageNotificationLogCreate");
             using (var db = new DatabaseContext())
             {
-                //using (var transaction = db.Database.BeginTransaction())
-                //{
                 try
                 {
                     db.Add(new MessageNotificationLog
@@ -77,7 +68,8 @@ namespace bbt.notification.worker.Helper
 
                 catch (Exception e)
                 {
-                    //  transaction.Rollback();
+                    Console.WriteLine("DB ERROR =>" + e.Message);
+                    span?.CaptureException(e);
                     return false;
                 }
             }
