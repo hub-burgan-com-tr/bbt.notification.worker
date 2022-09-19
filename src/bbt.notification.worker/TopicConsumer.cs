@@ -172,7 +172,7 @@ namespace bbt.notification.worker
 
                 EmailRequestModel emailRequestModel = new EmailRequestModel();
                  string path = baseModel.GetSendEmailEndpoint();
-                if (consumerModel != null && consumerModel.consumers != null && consumerModel.consumers != null && consumerModel.consumers.Count > 0)
+                if (consumerModel != null && consumerModel.consumers != null  && consumerModel.consumers.Count > 0)
                 {
                     emailRequestModel.CustomerNo = consumerModel.consumers[0].client;
                     emailRequestModel.Email = consumerModel.consumers[0].email;
@@ -223,7 +223,7 @@ namespace bbt.notification.worker
 
                 PushNotificaitonRequestModel pushNotificationRequestModel = new PushNotificaitonRequestModel();
                 string path = baseModel.GetSendPushnotificationEndpoint();
-                if (consumerModel.consumers != null)
+                if (consumerModel != null && consumerModel.consumers != null && consumerModel.consumers.Count > 0)
                 {
                     pushNotificationRequestModel.CustomerNo = consumerModel.consumers[0].client.ToString();
 
