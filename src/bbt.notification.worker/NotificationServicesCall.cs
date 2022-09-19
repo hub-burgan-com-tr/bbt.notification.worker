@@ -94,7 +94,7 @@ namespace bbt.notification.worker
                         return consumerModel;
                     }
                     Console.WriteLine("BAŞARISIZ => PostConsumerDetailAsync" + response.StatusCode + "=>" + response.RequestMessage);
-                    _logHelper.LogCreate(requestModel, consumerModel, "PostConsumerDetailAsync", "BAŞARISIZ");
+                    _logHelper.LogCreate(requestModel, consumerModel, "PostConsumerDetailAsync", response.StatusCode.ToString());
                     return consumerModel = null;
                 }
                 catch (Exception e)
