@@ -121,9 +121,6 @@ namespace bbt.notification.worker
                         dengageRequestModel.phone.prefix = consumerModel.consumers[0].phone.prefix;
                         dengageRequestModel.phone.number = consumerModel.consumers[0].phone.number;
                         Console.WriteLine(consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number);
-                        //   _logHelper.LogCreate(consumerModel, consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number, "SmsPhone","");
-
-
                         dengageRequestModel.template = topicModel.smsServiceReference;
                         dengageRequestModel.templateParams = postConsumerDetailRequestModel.jsonData;
                         dengageRequestModel.process.name = "Notification-Cashback";
@@ -131,9 +128,7 @@ namespace bbt.notification.worker
                         HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, dengageRequestModel);
                         Console.WriteLine("SMS=>" + response.StatusCode);
                         _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId, consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number:null, "", dengageRequestModel, response, NotificationTypeEnum.SMS.GetHashCode(), response.StatusCode.ToString());
-                       
-                        //   _logHelper.LogCreate(consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number + " RequestData: " + JsonConvert.SerializeObject(dengageRequestModel, Formatting.Indented) : null, response.StatusCode, "SendSms", response.StatusCode.ToString());
-                        //  _logHelper.LogCreate(response.StatusCode, true, "SendSms_", "SmsGönderim" + " SendSmsMethod");
+                      
                         if (response.IsSuccessStatusCode)
                         {
                             consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
@@ -176,31 +171,39 @@ namespace bbt.notification.worker
                 {
                     emailRequestModel.CustomerNo = consumerModel.consumers[0].client;
                     emailRequestModel.Email = consumerModel.consumers[0].email;
-
-                    Console.WriteLine(consumerModel.consumers[0].email);
-                    
-                    emailRequestModel.TemplateParams = postConsumerDetailRequestModel.jsonData;
-                    emailRequestModel.Template = topicModel.emailServiceReference;
-                    emailRequestModel.Process = new DengageRequestModel.Process();
-                    emailRequestModel.Process.name = "Notification-Cashback";
-                    emailRequestModel.Process.ItemId = "1";
-                    emailRequestModel.Process.Action = "Notification";
-                    emailRequestModel.Process.Identity = "1";
-
-                    HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, emailRequestModel);
-                    Console.WriteLine("EMAIL=>" + response.StatusCode + "" + emailRequestModel.Email);
-                    _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId,"", consumerModel.consumers[0] != null ? consumerModel.consumers[0].email:null, emailRequestModel, response, NotificationTypeEnum.EMAIL.GetHashCode(), response.StatusCode.ToString());
-
-
-                    if (response.IsSuccessStatusCode)
+                    if (!String.IsNullOrEmpty(emailRequestModel.Email))
                     {
-                        consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
+                        Console.WriteLine(consumerModel.consumers[0].email);
+
+                        emailRequestModel.TemplateParams = postConsumerDetailRequestModel.jsonData;
+                        emailRequestModel.Template = topicModel.emailServiceReference;
+                        emailRequestModel.Process = new DengageRequestModel.Process();
+                        emailRequestModel.Process.name = "Notification-Cashback";
+                        emailRequestModel.Process.ItemId = "1";
+                        emailRequestModel.Process.Action = "Notification";
+                        emailRequestModel.Process.Identity = "1";
+
+                        HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, emailRequestModel);
+                        Console.WriteLine("EMAIL=>" + response.StatusCode + "" + emailRequestModel.Email);
+                        _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId, "", consumerModel.consumers[0] != null ? consumerModel.consumers[0].email : null, emailRequestModel, response, NotificationTypeEnum.EMAIL.GetHashCode(), response.StatusCode.ToString());
+
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            consumerModel = await response.Content.ReadAsAsync<ConsumerModel>();
+                        }
+                    }
+                    else
+                    {
+                        _logHelper.LogCreate("CustomerNo=>"+emailRequestModel.CustomerNo, false, "SendEmail", " Email address is null");
+                        Console.WriteLine(emailRequestModel.CustomerNo + " Email address is null");
+                        return false;
                     }
                 }
                 else
                 {
                     JToken clientId = o.SelectToken(topicModel.clientIdJsonPath);
-                    _logHelper.LogCreate(Convert.ToInt32(clientId), false, "SendEmail", "Consumer null");
+                    _logHelper.LogCreate(Convert.ToInt32(clientId), false, "SendEmail", "Consumer  null");
                     Console.WriteLine(Convert.ToInt32(clientId) + "Consumer null");
                     return false;
                 }
