@@ -34,16 +34,11 @@ namespace bbt.notification.worker
 
             await _tracer.CaptureTransaction("Process", ApiConstants.TypeRequest, async () =>
             {
-
                 try
                 {
-
-
                     JObject o = JObject.Parse(model);
 
                     JToken clientId = o.SelectToken(topicModel.clientIdJsonPath);
-                  
-
                     PostConsumerDetailRequestModel postConsumerDetailRequestModel = new PostConsumerDetailRequestModel();
                     postConsumerDetailRequestModel.client = Convert.ToInt32(clientId);
                     postConsumerDetailRequestModel.sourceId = Convert.ToInt32(Environment.GetEnvironmentVariable("Topic_Id") is null ? (_configuration.GetSection("TopicId").Value) : Environment.GetEnvironmentVariable("Topic_Id"));
@@ -76,8 +71,6 @@ namespace bbt.notification.worker
                     if (!String.IsNullOrEmpty(topicModel.smsServiceReference) && topicModel.smsServiceReference != "string")
                     {
                         bool sendSms = await SendSms(o, consumerModel, postConsumerDetailRequestModel);
-
-
                     }
                     if (!String.IsNullOrEmpty(topicModel.emailServiceReference) && topicModel.emailServiceReference != "string")
                     {
@@ -110,7 +103,7 @@ namespace bbt.notification.worker
                     kafkaDataTime = Convert.ToDateTime(o.SelectToken("message.headers.timestamp"));
                 }
 
-                if (topicModel.KafkaDataTime == 0 || kafkaDataTime >= DateTime.Now.AddMinutes(-(topicModel.KafkaDataTime)))
+                if (topicModel.RetentationTime == 0 || kafkaDataTime >= DateTime.Now.AddMinutes(-(topicModel.RetentationTime)))
 
                 {
                     DengageRequestModel dengageRequestModel = new DengageRequestModel();
@@ -163,8 +156,6 @@ namespace bbt.notification.worker
         {
             try
             {
-
-
                 EmailRequestModel emailRequestModel = new EmailRequestModel();
                  string path = baseModel.GetSendEmailEndpoint();
                 if (consumerModel != null && consumerModel.consumers != null  && consumerModel.consumers.Count > 0)
@@ -222,17 +213,11 @@ namespace bbt.notification.worker
         {
             try
             {
-
-
                 PushNotificaitonRequestModel pushNotificationRequestModel = new PushNotificaitonRequestModel();
                 string path = baseModel.GetSendPushnotificationEndpoint();
                 if (consumerModel != null && consumerModel.consumers != null && consumerModel.consumers.Count > 0)
                 {
                     pushNotificationRequestModel.CustomerNo = consumerModel.consumers[0].client.ToString();
-
-
-
-
                     pushNotificationRequestModel.TemplateParams = postConsumerDetailRequestModel.jsonData;
                     //    pushNotificationRequestModel.TemplateParams = "";
                     pushNotificationRequestModel.Template = topicModel.pushServiceReference;
@@ -242,11 +227,8 @@ namespace bbt.notification.worker
                     pushNotificationRequestModel.Process.Action = "Notification";
                     pushNotificationRequestModel.Process.Identity = "1";
 
-
-
                     HttpResponseMessage response = await ApiHelper.ApiClient.PostAsJsonAsync(path, pushNotificationRequestModel);
                     Console.WriteLine("PUSHNOTIFICATION=>" + response.StatusCode);
-                  //  _logHelper.LogCreate(consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number + " RequestData: " + JsonConvert.SerializeObject(pushNotificationRequestModel, Formatting.Indented) : null, response.StatusCode, "SendSms", response.StatusCode.ToString());
                     _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId, consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number : null, "", JsonConvert.SerializeObject(pushNotificationRequestModel, Formatting.Indented), response, NotificationTypeEnum.PUSHNOTIFICATION.GetHashCode(), response.StatusCode.ToString());
 
                     if (response.IsSuccessStatusCode)

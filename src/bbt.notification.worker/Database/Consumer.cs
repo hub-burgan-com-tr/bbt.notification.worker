@@ -18,4 +18,6 @@ public class Consumer
     public bool IsEmailEnabled { get; set; }
     public string Email { get; set; }
 
+    public bool IsStaff { get; set; }
+
 }

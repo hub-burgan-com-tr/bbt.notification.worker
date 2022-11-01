@@ -15,12 +15,10 @@ namespace bbt.notification.worker.Models
         public string secret { get; set; }
         public string clientIdJsonPath { get; set; }
         public string kafkaUrl { get; set; }
-
      
         public  string kafkaCertificate { get; set; }
 
-
-        public int  KafkaDataTime { get; set; }
+        public int RetentationTime { get; set; }
         public List<SourceServices> ServiceUrlList { get; set; }
 
     }

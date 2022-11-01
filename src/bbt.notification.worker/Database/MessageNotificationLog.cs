@@ -15,6 +15,7 @@ public class MessageNotificationLog
     public int NotificationType { get; set; }
     public string ResponseMessage { get; set; }
     public DateTime CreateDate { get; set; }
+    public bool IsStaff { get; set; }
 
 }
 
