@@ -105,6 +105,7 @@ public class DatabaseContext : DbContext
                     DeviceKey = "",
                     Email = "",
                     Filter = "",
+                    IsStaff=false,
 
                 });
                // c.OwnsOne(e => e.Phone).HasData(new { ConsumerId = new Guid("2e15d57c-26e3-4e78-94f9-8649b3302555"), CountryCode = 90, Prefix = 530, Number = 3855206 });
@@ -125,7 +126,8 @@ public class DatabaseContext : DbContext
                     IsEmailEnabled = false,
                     DeviceKey="",
                     Email="",
-                    
+                    IsStaff = false,
+
                 });
               //  c.OwnsOne(e => e.Phone).HasData(new { ConsumerId = new Guid("3e15d57c-26e3-4e78-94f9-8649b3302555"), CountryCode = 90, Prefix = 530, Number = 3855206 });
             });

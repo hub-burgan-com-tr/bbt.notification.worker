@@ -17,7 +17,7 @@ namespace bbt.notification.worker.Models
         public Phone phone { get; set; }
         public bool isEmailEnabled { get; set; }
         public string email { get; set; }
-        public bool IsStaff { get; set; }
+        public bool isStaff { get; set; }
     }
 
         public class Phone
