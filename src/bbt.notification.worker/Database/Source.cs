@@ -20,6 +20,7 @@ public class Source
     public string EmailServiceReference { get; set; }
     public string KafkaCertificate { get; set; }
     public int RetentationTime { get; set; }
+    public int ProductCodeId { get; set; }
 }
 
 //TODO: Diger modellere ClientIdJsonPath eklenmeli

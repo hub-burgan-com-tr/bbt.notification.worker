@@ -4,7 +4,6 @@ using bbt.notification.worker.Models;
 
 public class Consumer
 {
-    
     public Guid Id { get; set; }
     public Source Source { get; set; }
     public int SourceId { get; set; }
@@ -17,7 +16,7 @@ public class Consumer
     public Phone Phone { get; set; }
     public bool IsEmailEnabled { get; set; }
     public string Email { get; set; }
-
+    public string DefinitionCode { get; set; }
     public bool IsStaff { get; set; }
 
 }

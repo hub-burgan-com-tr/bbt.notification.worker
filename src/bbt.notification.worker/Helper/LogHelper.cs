@@ -25,6 +25,7 @@ namespace bbt.notification.worker.Helper
                         ErrorMessage = errorMessage,
                         RequestData = JsonConvert.SerializeObject(requestModel),
                         ResponseData = JsonConvert.SerializeObject(responseModel)
+                        
                     });
 
                     db.SaveChanges();
@@ -42,13 +43,14 @@ namespace bbt.notification.worker.Helper
             }
         }
 
-        public bool MessageNotificationLogCreate(long CustomerNo, int SourceId, string PhoneNumber, string Email, object requestModel, object responseModel, int NotificationType, string ResponseMessage)
+        public bool MessageNotificationLogCreate(long CustomerNo, int SourceId, string PhoneNumber, string Email, object requestModel, object responseModel, int NotificationType, string ResponseMessage,string Content,bool isStaff)
         {
             var span = _tracer.CurrentTransaction?.StartSpan("MessageNotificationLogCreateSpan", "MessageNotificationLogCreate");
             using (var db = new DatabaseContext())
             {
                 try
                 {
+             
                     db.Add(new MessageNotificationLog
                     {
                         CustomerNo = CustomerNo,
@@ -59,7 +61,9 @@ namespace bbt.notification.worker.Helper
                         CreateDate = DateTime.Now,
                         NotificationType = NotificationType,
                         RequestData = JsonConvert.SerializeObject(requestModel),
-                        ResponseData = JsonConvert.SerializeObject(responseModel)
+                        ResponseData = JsonConvert.SerializeObject(responseModel),
+                        IsStaff= isStaff,
+                        Content=Content
                     });
 
                     db.SaveChanges();
@@ -74,5 +78,7 @@ namespace bbt.notification.worker.Helper
                 }
             }
         }
+
+       
     }
 }
