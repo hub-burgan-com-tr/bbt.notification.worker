@@ -105,7 +105,6 @@ namespace bbt.notification.worker
                 }
             });
             return consumerModel;
-
         }
     }
 }
