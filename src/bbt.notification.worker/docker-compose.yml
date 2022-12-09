@@ -1,0 +1,7 @@
+version: '3.4'
+
+services:
+  worker:
+    image: worker
+    environment:
+      - Topic_Id=X
