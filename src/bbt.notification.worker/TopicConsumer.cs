@@ -149,8 +149,8 @@ namespace bbt.notification.worker
                             if (respModel != null && respModel.TxnId != null)
                             {
                                 string pathGeneratedMessage = baseModel.GetGeneratedMessageEndPoint().Replace("{txnId}", respModel.TxnId.ToString());
-                            
-                                  HttpResponseMessage htpResponse = await ApiHelper.ApiClient.GetAsync(pathGeneratedMessage);
+                                Console.WriteLine(pathGeneratedMessage);
+                                HttpResponseMessage htpResponse = await ApiHelper.ApiClient.GetAsync(pathGeneratedMessage);
                                 if (htpResponse.IsSuccessStatusCode)
                                 {
                                     generatedMessageModel = await htpResponse.Content.ReadAsAsync<GeneratedMessage>();
@@ -162,6 +162,10 @@ namespace bbt.notification.worker
                                     {
                                         _logHelper.LogCreate(path, generatedMessageModel, "SendSmsContentResponseModel", "Content is null");
                                     }
+                                }
+                                else
+                                {
+                                    _logHelper.LogCreate(path, htpResponse, "SendSmsContentError", "GeneratedMessage status false");
                                 }
 
                             }
@@ -234,7 +238,8 @@ namespace bbt.notification.worker
                             if (respModel != null && respModel.TxnId != null)
                             {
                                 string pathGeneratedMessage = baseModel.GetGeneratedMessageEndPoint().Replace("{txnId}", respModel.TxnId.ToString());
-                                HttpResponseMessage htpResponse = await ApiHelper.ApiClient.GetAsync(path);
+                                Console.WriteLine(pathGeneratedMessage);
+                                HttpResponseMessage htpResponse = await ApiHelper.ApiClient.GetAsync(pathGeneratedMessage);
                                 if (htpResponse.IsSuccessStatusCode)
                                 {
                                     generatedMessageModel = await htpResponse.Content.ReadAsAsync<GeneratedMessage>();
@@ -247,6 +252,10 @@ namespace bbt.notification.worker
                                     {
                                         _logHelper.LogCreate(path, generatedMessageModel, "SendEmailContentResponseModel", "Content is null");
                                     }
+                                }
+                                else
+                                {
+                                    _logHelper.LogCreate(path, htpResponse, "SendEmailContentError", "GeneratedMessage status false");
                                 }
 
                             }
@@ -309,7 +318,8 @@ namespace bbt.notification.worker
                         if (respModel != null && respModel.TxnId != null)
                         {
                             string pathGeneratedMessage = baseModel.GetGeneratedMessageEndPoint().Replace("{txnId}", respModel.TxnId.ToString());
-                            HttpResponseMessage htpResponse = await ApiHelper.ApiClient.GetAsync(path);
+                            Console.WriteLine(pathGeneratedMessage);
+                            HttpResponseMessage htpResponse = await ApiHelper.ApiClient.GetAsync(pathGeneratedMessage);
                             if (htpResponse.IsSuccessStatusCode)
                             {
                                 generatedMessageModel = await htpResponse.Content.ReadAsAsync<GeneratedMessage>();
@@ -324,8 +334,13 @@ namespace bbt.notification.worker
                                     _logHelper.LogCreate(path, generatedMessageModel, "SendPushContentResponseModel", "Content is null");
                                 }
                             }
+                            else
+                            {
+                                _logHelper.LogCreate(path, htpResponse, "SendPushContentError", "GeneratedMessage status false");
+                            }
 
                         }
+
                         else
                         {
                             _logHelper.LogCreate(respModel, false, "SendPushContentResponseTxnModel", "TxnId is null");
