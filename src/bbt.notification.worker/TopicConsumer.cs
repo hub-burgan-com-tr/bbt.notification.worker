@@ -302,6 +302,7 @@ namespace bbt.notification.worker
                     pushNotificationRequestModel.TemplateParams = postConsumerDetailRequestModel.jsonData;
                     //    pushNotificationRequestModel.TemplateParams = "";
                     pushNotificationRequestModel.Template = topicModel.pushServiceReference;
+                    pushNotificationRequestModel.SaveInbox = topicModel.saveInbox;
                     pushNotificationRequestModel.Process = new DengageRequestModel.Process();
                     pushNotificationRequestModel.Process.name = "Notification-Cashback";
                     pushNotificationRequestModel.Process.ItemId = "1";
