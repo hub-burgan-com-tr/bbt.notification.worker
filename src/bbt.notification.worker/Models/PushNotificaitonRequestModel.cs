@@ -15,7 +15,7 @@ namespace bbt.notification.worker.Models
         public string ContactId { get; set; }
         public string CustomParameters { get; set; }
         public Guid Id { get; set; }
-
+        public bool SaveInbox { get; set; }
         public Process Process { get; set; }
     }
 }

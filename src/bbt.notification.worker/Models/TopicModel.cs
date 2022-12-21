@@ -19,6 +19,8 @@ namespace bbt.notification.worker.Models
         public  string kafkaCertificate { get; set; }
 
         public int RetentationTime { get; set; }
+        public int? productCodeId { get; set; }
+        public bool saveInbox { get; set; }
         public List<SourceServices> ServiceUrlList { get; set; }
 
     }
