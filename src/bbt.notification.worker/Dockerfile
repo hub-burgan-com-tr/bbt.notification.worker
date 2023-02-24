@@ -5,6 +5,8 @@ WORKDIR /app
 # For more info, please refer to https://aka.ms/vscode-docker-dotnet-configure-containers
 RUN adduser -u 5678 --disabled-password --gecos "" notification-workeruser && chown -R notification-workeruser:notification-workeruser /app
 USER notification-workeruser
+COPY kafka_nonprod.cer kafka_nonprod.cer .
+COPY kafka_prod.cer kafka_prod.cer .
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 
@@ -20,8 +22,7 @@ RUN dotnet publish "bbt.notification.worker.csproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app
-COPY kafka_nonprod.cer kafka_nonprod.cer .
-COPY kafka_prod.cer kafka_prod.cer .
+
 COPY --from=publish /app/publish .
 ENV Topic_Id=10170
 ENTRYPOINT ["dotnet", "bbt.notification.worker.dll"]
