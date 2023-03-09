@@ -71,7 +71,8 @@ namespace bbt.notification.worker
 
                     if (!String.IsNullOrEmpty(topicModel.smsServiceReference) && topicModel.smsServiceReference != "string")
                     {
-                        if (consumerModel != null && consumerModel.consumers.Count() > 0 && consumerModel.consumers[0].isSmsEnabled == true)
+                      
+                        if (consumerModel != null && consumerModel.consumers != null && consumerModel.consumers.Count() > 0 && consumerModel.consumers[0].isSmsEnabled == true)
                         {
 
                             bool sendSms = await SendSms(o, consumerModel, postConsumerDetailRequestModel);
@@ -82,7 +83,7 @@ namespace bbt.notification.worker
                     if (!String.IsNullOrEmpty(topicModel.emailServiceReference) && topicModel.emailServiceReference != "string")
                     {
                        
-                        if (consumerModel != null && consumerModel.consumers.Count() > 0 && consumerModel.consumers[0].isEmailEnabled == true)
+                        if (consumerModel != null && consumerModel.consumers != null && consumerModel.consumers.Count() > 0 && consumerModel.consumers[0].isEmailEnabled == true)
                         {
                          
                             bool sendEmail = await SendEmail(o, consumerModel, postConsumerDetailRequestModel);
@@ -92,7 +93,7 @@ namespace bbt.notification.worker
                     if (!String.IsNullOrEmpty(topicModel.pushServiceReference) && topicModel.pushServiceReference != "string")
                     {
                       
-                        if (consumerModel != null && consumerModel.consumers.Count() > 0 && consumerModel.consumers[0].isPushEnabled == true)
+                        if (consumerModel != null && consumerModel.consumers != null && consumerModel.consumers.Count() > 0 && consumerModel.consumers[0].isPushEnabled == true)
                         {
                             bool sendPushNotfication = await SendPushNotification(consumerModel, postConsumerDetailRequestModel);
                         }
