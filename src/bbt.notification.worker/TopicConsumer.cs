@@ -134,8 +134,8 @@ namespace bbt.notification.worker
                         Console.WriteLine(consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number);
                         dengageRequestModel.template = topicModel.smsServiceReference;
                         dengageRequestModel.templateParams = postConsumerDetailRequestModel.jsonData;
-                        dengageRequestModel.process.name = "Notification-Cashback";
-                        dengageRequestModel.process.ItemId = "1";
+                        dengageRequestModel.process.name = string.IsNullOrEmpty(topicModel.processName) ? topicModel.topic : topicModel.processName;
+                        dengageRequestModel.process.ItemId = string.IsNullOrEmpty(topicModel.processItemId) ? "1" : topicModel.processItemId;
                         dengageRequestModel.process.Action = "Notification";
                         dengageRequestModel.process.Identity = "1";
                         SendMessageResponseModel respModel = new SendMessageResponseModel();

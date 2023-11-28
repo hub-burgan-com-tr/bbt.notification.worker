@@ -21,6 +21,8 @@ namespace bbt.notification.worker.Models
         public int RetentationTime { get; set; }
         public int? productCodeId { get; set; }
         public bool saveInbox { get; set; }
+        public string processName { get; set; }
+        public string processItemId { get; set; }
         public List<SourceServices> ServiceUrlList { get; set; }
 
     }
