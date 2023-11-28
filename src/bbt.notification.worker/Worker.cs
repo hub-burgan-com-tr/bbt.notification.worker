@@ -46,8 +46,6 @@ public class Worker : BackgroundService
                     kafkaSettings.Topic = new string[] { topicModel.topic };
                     kafkaSettings.BootstrapServers = topicModel.kafkaUrl;
                     kafkaSettings.GroupId =  topicModel.title_TR;
-                   // kafkaSettings.GroupId = "test13";
-                  //  kafkaSettings.SslCaLocation = baseModel.GetKafkaCertPath();
                     kafkaSettings.SslCaLocation = topicModel.kafkaCertificate;
                     var consumer = new TopicConsumer(kafkaSettings, stoppingToken, tracer, logger, topicModel,logHelper, _configuration);
            
