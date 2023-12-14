@@ -221,8 +221,8 @@ namespace bbt.notification.worker
                         emailRequestModel.TemplateParams = postConsumerDetailRequestModel.jsonData;
                         emailRequestModel.Template = topicModel.emailServiceReference;
                         emailRequestModel.Process = new DengageRequestModel.Process();
-                        emailRequestModel.Process.name = "Notification-Cashback";
-                        emailRequestModel.Process.ItemId = "1";
+                        emailRequestModel.Process.name = string.IsNullOrEmpty(topicModel.processName) ? topicModel.topic : topicModel.processName;
+                        emailRequestModel.Process.ItemId = string.IsNullOrEmpty(topicModel.processItemId) ? "1" : topicModel.processItemId;
                         emailRequestModel.Process.Action = "Notification";
                         emailRequestModel.Process.Identity = "1";
                         SendMessageResponseModel respModel = new SendMessageResponseModel();
@@ -305,8 +305,8 @@ namespace bbt.notification.worker
                     pushNotificationRequestModel.Template = topicModel.pushServiceReference;
                     pushNotificationRequestModel.SaveInbox = topicModel.saveInbox;
                     pushNotificationRequestModel.Process = new DengageRequestModel.Process();
-                    pushNotificationRequestModel.Process.name = "Notification-Cashback";
-                    pushNotificationRequestModel.Process.ItemId = "1";
+                    pushNotificationRequestModel.Process.name = string.IsNullOrEmpty(topicModel.processName) ? topicModel.topic : topicModel.processName;
+                    pushNotificationRequestModel.Process.ItemId = string.IsNullOrEmpty(topicModel.processItemId) ? "1" : topicModel.processItemId;
                     pushNotificationRequestModel.Process.Action = "Notification";
                     pushNotificationRequestModel.Process.Identity = "1";
                     SendMessageResponseModel respModel = new SendMessageResponseModel();
