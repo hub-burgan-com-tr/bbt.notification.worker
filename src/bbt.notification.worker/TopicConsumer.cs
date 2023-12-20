@@ -128,7 +128,12 @@ namespace bbt.notification.worker
                     string path = baseModel.GetSendSmsEndpoint();
                     if (consumerModel != null && consumerModel.consumers != null && consumerModel.consumers.Count > 0)
                     {
-                        var processItemId = GetJsonValue(o, topicModel.processItemId);
+                        var processItemId = "1";
+
+                        if (!string.IsNullOrEmpty(topicModel.processItemId))
+                        {
+                            processItemId = GetJsonValue(o, topicModel.processItemId);
+                        }
 
                         dengageRequestModel.phone.countryCode = consumerModel.consumers[0].phone.countryCode;
                         dengageRequestModel.phone.prefix = consumerModel.consumers[0].phone.prefix;
@@ -137,7 +142,7 @@ namespace bbt.notification.worker
                         dengageRequestModel.template = topicModel.smsServiceReference;
                         dengageRequestModel.templateParams = postConsumerDetailRequestModel.jsonData;
                         dengageRequestModel.process.name = string.IsNullOrEmpty(topicModel.processName) ? topicModel.topic : topicModel.processName;
-                        dengageRequestModel.process.ItemId = string.IsNullOrEmpty(processItemId) ? "1" : processItemId;
+                        dengageRequestModel.process.ItemId = processItemId;
                         dengageRequestModel.process.Action = "Notification";
                         dengageRequestModel.process.Identity = "1";
                         SendMessageResponseModel respModel = new SendMessageResponseModel();
@@ -221,13 +226,18 @@ namespace bbt.notification.worker
                     {
                         Console.WriteLine(consumerModel.consumers[0].email);
 
-                        var processItemId = GetJsonValue(o, topicModel.processItemId);
+                        var processItemId = "1";
+
+                        if (!string.IsNullOrEmpty(topicModel.processItemId))
+                        {
+                            processItemId = GetJsonValue(o, topicModel.processItemId);
+                        }
 
                         emailRequestModel.TemplateParams = postConsumerDetailRequestModel.jsonData;
                         emailRequestModel.Template = topicModel.emailServiceReference;
                         emailRequestModel.Process = new DengageRequestModel.Process();
                         emailRequestModel.Process.name = string.IsNullOrEmpty(topicModel.processName) ? topicModel.topic : topicModel.processName;
-                        emailRequestModel.Process.ItemId = string.IsNullOrEmpty(processItemId) ? "1" : processItemId;
+                        emailRequestModel.Process.ItemId = processItemId;
                         emailRequestModel.Process.Action = "Notification";
                         emailRequestModel.Process.Identity = "1";
                         SendMessageResponseModel respModel = new SendMessageResponseModel();
@@ -305,7 +315,12 @@ namespace bbt.notification.worker
 
                 if (consumerModel != null && consumerModel.consumers != null && consumerModel.consumers.Count > 0)
                 {
-                    var processItemId = GetJsonValue(o, topicModel.processItemId);
+                    var processItemId = "1";
+
+                    if (!string.IsNullOrEmpty(topicModel.processItemId))
+                    {
+                        processItemId = GetJsonValue(o, topicModel.processItemId);
+                    }
 
                     pushNotificationRequestModel.CustomerNo = consumerModel.consumers[0].client.ToString();
                     pushNotificationRequestModel.TemplateParams = postConsumerDetailRequestModel.jsonData;
@@ -314,7 +329,7 @@ namespace bbt.notification.worker
                     pushNotificationRequestModel.SaveInbox = topicModel.saveInbox;
                     pushNotificationRequestModel.Process = new DengageRequestModel.Process();
                     pushNotificationRequestModel.Process.name = string.IsNullOrEmpty(topicModel.processName) ? topicModel.topic : topicModel.processName;
-                    pushNotificationRequestModel.Process.ItemId = string.IsNullOrEmpty(processItemId) ? "1" : processItemId;
+                    pushNotificationRequestModel.Process.ItemId = processItemId;
                     pushNotificationRequestModel.Process.Action = "Notification";
                     pushNotificationRequestModel.Process.Identity = "1";
                     SendMessageResponseModel respModel = new SendMessageResponseModel();
