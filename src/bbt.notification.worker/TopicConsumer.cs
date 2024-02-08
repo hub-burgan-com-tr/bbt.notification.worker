@@ -116,7 +116,6 @@ namespace bbt.notification.worker
 
                 if (topicModel.RetentationTime == 0 || kafkaDataTime >= DateTime.Now.AddMinutes(-topicModel.RetentationTime))
                 {
-                    var dengageRequestModel = new DengageRequestModel();
                     var path = baseModel.GetSendSmsEndpoint();
 
                     if (HasConsumer(consumerModel))
@@ -128,6 +127,7 @@ namespace bbt.notification.worker
                             processItemId = GetJsonValue(o, topicModel.processItemId);
                         }
 
+                        var dengageRequestModel = new DengageRequestModel();
                         dengageRequestModel.phone.countryCode = consumerModel.consumers[0].phone.countryCode;
                         dengageRequestModel.phone.prefix = consumerModel.consumers[0].phone.prefix;
                         dengageRequestModel.phone.number = consumerModel.consumers[0].phone.number;                     
@@ -148,7 +148,7 @@ namespace bbt.notification.worker
 
                             if (respModel != null && respModel.TxnId != null)
                             {
-                                string pathGeneratedMessage = baseModel.GetGeneratedMessageEndPoint().Replace("{txnId}", respModel.TxnId.ToString());
+                                var pathGeneratedMessage = baseModel.GetGeneratedMessageEndPoint().Replace("{txnId}", respModel.TxnId.ToString());
                                 
                                 var htpResponse = await ApiHelper.ApiClient.GetAsync(pathGeneratedMessage);
 
