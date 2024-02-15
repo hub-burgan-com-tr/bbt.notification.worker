@@ -5,6 +5,7 @@ using bbt.notification.worker.Models;
 using Elastic.Apm.Api;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Text;
 
 namespace bbt.notification.worker
 {
@@ -34,15 +35,15 @@ namespace bbt.notification.worker
             {
                 try
                 {
-                    JObject o = JObject.Parse(model);
+                    JObject obj = JObject.Parse(model);
 
-                    JToken clientId = o.SelectToken(topicModel.clientIdJsonPath);
+                    JToken clientId = obj.SelectToken(topicModel.clientIdJsonPath);
 
                     var postConsumerDetailRequestModel = new PostConsumerDetailRequestModel
                     {
                         client = Convert.ToInt32(clientId),
                         sourceId = Convert.ToInt32(Environment.GetEnvironmentVariable("Topic_Id") ?? _configuration.GetSection("TopicId").Value),
-                        jsonData = o.SelectToken("message.data").ToString().Replace(Environment.NewLine, string.Empty)
+                        jsonData = obj.SelectToken("message.data").ToString().Replace(Environment.NewLine, string.Empty)
                     };
 
                     if (topicModel.ServiceUrlList.Count > 0)
@@ -52,7 +53,7 @@ namespace bbt.notification.worker
                             var enrichmentServiceRequestModel = new EnrichmentServiceRequestModel
                             {
                                 customerId = Convert.ToInt32(clientId),
-                                dataModel = o.SelectToken("message.data").ToString().Replace(Environment.NewLine, string.Empty)
+                                dataModel = obj.SelectToken("message.data").ToString().Replace(Environment.NewLine, string.Empty)
                             };
 
                             var enrichmentServicesCall = new EnrichmentServicesCall(_tracer, _logHelper);
@@ -74,19 +75,19 @@ namespace bbt.notification.worker
                     if (HasValidServiceReference(topicModel.smsServiceReference) && HasConsumer(consumerModel) &&
                         (consumerModel.consumers[0].isSmsEnabled || alwaysSendTypeList.Contains(AlwaysSendType.Sms)))
                     {
-                        await SendSms(o, consumerModel, postConsumerDetailRequestModel);
+                        await SendSms(obj, consumerModel, postConsumerDetailRequestModel);
                     }
 
                     if (HasValidServiceReference(topicModel.emailServiceReference) && HasConsumer(consumerModel) &&
                         (consumerModel.consumers[0].isEmailEnabled || alwaysSendTypeList.Contains(AlwaysSendType.EMail)))
                     {
-                        await SendEmail(o, consumerModel, postConsumerDetailRequestModel);
+                        await SendEmail(obj, consumerModel, postConsumerDetailRequestModel);
                     }
 
                     if (HasValidServiceReference(topicModel.pushServiceReference) && HasConsumer(consumerModel) &&
                     (consumerModel.consumers[0].isPushEnabled || alwaysSendTypeList.Contains(AlwaysSendType.Push)))
                     {
-                        await SendPush(o, consumerModel, postConsumerDetailRequestModel);
+                        await SendPush(obj, consumerModel, postConsumerDetailRequestModel);
                     }
 
                     return true;
@@ -101,18 +102,18 @@ namespace bbt.notification.worker
 
             return true;
         }
-        public async Task<bool> SendSms(JObject o, ConsumerModel consumerModel, PostConsumerDetailRequestModel postConsumerDetailRequestModel)
+        public async Task<bool> SendSms(JObject obj, ConsumerModel consumerModel, PostConsumerDetailRequestModel postConsumerDetailRequestModel)
         {
             try
             {
                 DateTime kafkaDataTime = DateTime.Today;
 
-                if (!string.IsNullOrEmpty(o.SelectToken("message.headers.timestamp").ToString()))
+                if (!string.IsNullOrEmpty(obj.SelectToken("message.headers.timestamp").ToString()))
                 {
-                    kafkaDataTime = Convert.ToDateTime(o.SelectToken("message.headers.timestamp"));
+                    kafkaDataTime = Convert.ToDateTime(obj.SelectToken("message.headers.timestamp"));
                 }
 
-                JToken clientId = o.SelectToken(topicModel.clientIdJsonPath);
+                JToken clientId = obj.SelectToken(topicModel.clientIdJsonPath);
 
                 if (topicModel.RetentationTime == 0 || kafkaDataTime >= DateTime.Now.AddMinutes(-topicModel.RetentationTime))
                 {
@@ -120,21 +121,14 @@ namespace bbt.notification.worker
 
                     if (HasConsumer(consumerModel))
                     {
-                        var processItemId = "1";
-
-                        if (!string.IsNullOrEmpty(topicModel.processItemId))
-                        {
-                            processItemId = GetJsonValue(o, topicModel.processItemId);
-                        }
-
                         var dengageRequestModel = new DengageRequestModel();
                         dengageRequestModel.phone.countryCode = consumerModel.consumers[0].phone.countryCode;
                         dengageRequestModel.phone.prefix = consumerModel.consumers[0].phone.prefix;
-                        dengageRequestModel.phone.number = consumerModel.consumers[0].phone.number;                     
+                        dengageRequestModel.phone.number = consumerModel.consumers[0].phone.number;
                         dengageRequestModel.template = topicModel.smsServiceReference;
                         dengageRequestModel.templateParams = postConsumerDetailRequestModel.jsonData;
                         dengageRequestModel.process.name = string.IsNullOrEmpty(topicModel.processName) ? topicModel.topic : topicModel.processName;
-                        dengageRequestModel.process.ItemId = processItemId;
+                        dengageRequestModel.process.ItemId = GetProcessItemId(obj, topicModel.processItemId);
                         dengageRequestModel.process.Action = "Notification";
                         dengageRequestModel.process.Identity = "1";
 
@@ -149,7 +143,7 @@ namespace bbt.notification.worker
                             if (respModel != null && respModel.TxnId != null)
                             {
                                 var pathGeneratedMessage = baseModel.GetGeneratedMessageEndPoint().Replace("{txnId}", respModel.TxnId.ToString());
-                                
+
                                 var htpResponse = await ApiHelper.ApiClient.GetAsync(pathGeneratedMessage);
 
                                 if (htpResponse.IsSuccessStatusCode)
@@ -198,7 +192,7 @@ namespace bbt.notification.worker
                 return false;
             }
         }
-        public async Task<bool> SendEmail(JObject o, ConsumerModel consumerModel, PostConsumerDetailRequestModel postConsumerDetailRequestModel)
+        public async Task<bool> SendEmail(JObject obj, ConsumerModel consumerModel, PostConsumerDetailRequestModel postConsumerDetailRequestModel)
         {
             try
             {
@@ -212,18 +206,11 @@ namespace bbt.notification.worker
 
                     if (!string.IsNullOrEmpty(emailRequestModel.Email))
                     {
-                        var processItemId = "1";
-
-                        if (!string.IsNullOrEmpty(topicModel.processItemId))
-                        {
-                            processItemId = GetJsonValue(o, topicModel.processItemId);
-                        }
-
                         emailRequestModel.TemplateParams = postConsumerDetailRequestModel.jsonData;
                         emailRequestModel.Template = topicModel.emailServiceReference;
                         emailRequestModel.Process = new DengageRequestModel.Process();
                         emailRequestModel.Process.name = string.IsNullOrEmpty(topicModel.processName) ? topicModel.topic : topicModel.processName;
-                        emailRequestModel.Process.ItemId = processItemId;
+                        emailRequestModel.Process.ItemId = GetProcessItemId(obj, topicModel.processItemId);
                         emailRequestModel.Process.Action = "Notification";
                         emailRequestModel.Process.Identity = "1";
 
@@ -238,7 +225,7 @@ namespace bbt.notification.worker
                             if (respModel != null && respModel.TxnId != null)
                             {
                                 var pathGeneratedMessage = baseModel.GetGeneratedMessageEndPoint().Replace("{txnId}", respModel.TxnId.ToString());
-                                
+
                                 var htpResponse = await ApiHelper.ApiClient.GetAsync(pathGeneratedMessage);
 
                                 if (htpResponse.IsSuccessStatusCode)
@@ -275,7 +262,7 @@ namespace bbt.notification.worker
                 }
                 else
                 {
-                    JToken clientId = o.SelectToken(topicModel.clientIdJsonPath);
+                    JToken clientId = obj.SelectToken(topicModel.clientIdJsonPath);
                     _logHelper.LogCreate(Convert.ToInt32(clientId), false, "SendEmail", "Consumer  null");
                     return false;
                 }
@@ -289,7 +276,7 @@ namespace bbt.notification.worker
             return true;
         }
 
-        public async Task<bool> SendPush(JObject o, ConsumerModel consumerModel, PostConsumerDetailRequestModel postConsumerDetailRequestModel)
+        public async Task<bool> SendPush(JObject obj, ConsumerModel consumerModel, PostConsumerDetailRequestModel postConsumerDetailRequestModel)
         {
             try
             {
@@ -298,13 +285,6 @@ namespace bbt.notification.worker
 
                 if (HasConsumer(consumerModel))
                 {
-                    var processItemId = "1";
-
-                    if (!string.IsNullOrEmpty(topicModel.processItemId))
-                    {
-                        processItemId = GetJsonValue(o, topicModel.processItemId);
-                    }
-
                     pushNotificationRequestModel.CustomerNo = consumerModel.consumers[0].client.ToString();
                     pushNotificationRequestModel.TemplateParams = postConsumerDetailRequestModel.jsonData;
 
@@ -312,13 +292,13 @@ namespace bbt.notification.worker
                     pushNotificationRequestModel.SaveInbox = topicModel.saveInbox;
                     pushNotificationRequestModel.Process = new DengageRequestModel.Process();
                     pushNotificationRequestModel.Process.name = string.IsNullOrEmpty(topicModel.processName) ? topicModel.topic : topicModel.processName;
-                    pushNotificationRequestModel.Process.ItemId = processItemId;
+                    pushNotificationRequestModel.Process.ItemId = GetProcessItemId(obj, topicModel.processItemId);
                     pushNotificationRequestModel.Process.Action = "Notification";
                     pushNotificationRequestModel.Process.Identity = "1";
 
                     var respModel = new SendMessageResponseModel();
                     var generatedMessageModel = new GeneratedMessage();
-                    var response = await ApiHelper.ApiClient.PostAsJsonAsync(path, pushNotificationRequestModel);                  
+                    var response = await ApiHelper.ApiClient.PostAsJsonAsync(path, pushNotificationRequestModel);
 
                     if (response.IsSuccessStatusCode)
                     {
@@ -356,7 +336,7 @@ namespace bbt.notification.worker
                 else
                 {
                     _logHelper.LogCreate("consumerModel", false, "SendPushNotification", "Consumer null");
-                    
+
                     return false;
                 }
             }
@@ -369,7 +349,7 @@ namespace bbt.notification.worker
 
             return true;
         }
-        public static string GetJsonValue(JObject obj, string path)
+        private static string GetJsonValue(JObject obj, string path)
         {
             var retVal = "";
 
@@ -383,11 +363,33 @@ namespace bbt.notification.worker
             return retVal;
         }
 
-        private bool HasConsumer(ConsumerModel consumerModel)
+        private static string GetProcessItemId(JObject obj, string processItemIdPath)
+        {
+            if (string.IsNullOrWhiteSpace(processItemIdPath))
+                return "1";
+
+            var tmp = processItemIdPath.Split(';');
+            var sb = new StringBuilder();
+
+            foreach (var item in tmp)
+            {
+                if (string.IsNullOrWhiteSpace(item))
+                    continue;
+
+                var tmpProcessItemId = GetJsonValue(obj, item);
+
+                if (!string.IsNullOrWhiteSpace(tmpProcessItemId))
+                    sb.Append(tmpProcessItemId + "-");
+            }
+
+            return sb.ToString().TrimEnd('-');
+        }
+
+        private static bool HasConsumer(ConsumerModel consumerModel)
         {
             return consumerModel != null && consumerModel.consumers != null && consumerModel.consumers.Count() > 0;
         }
-        private bool HasValidServiceReference(string serviceReference)
+        private static bool HasValidServiceReference(string serviceReference)
         {
             return !string.IsNullOrEmpty(serviceReference) && serviceReference != "string";
         }
