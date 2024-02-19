@@ -1,4 +1,4 @@
-
+using bbt.notification.worker.Enum;
 
 public class Source
 {
@@ -20,7 +20,10 @@ public class Source
     public string EmailServiceReference { get; set; }
     public string KafkaCertificate { get; set; }
     public int RetentationTime { get; set; }
-    public int ProductCodeId { get; set; }
+    public int? ProductCodeId { get; set; }
+    public bool SaveInbox { get; set; }
+    public string ProcessName { get; set; }
+    public string ProcessItemId { get; set; }
+    public InheritanceType InheritanceType { get; set; }
+    public AlwaysSendType AlwaysSendType { get; set; }
 }
-
-//TODO: Diger modellere ClientIdJsonPath eklenmeli

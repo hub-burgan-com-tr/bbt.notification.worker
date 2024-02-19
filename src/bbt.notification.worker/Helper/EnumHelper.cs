@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel;
 
 namespace bbt.notification.worker.Helper
 {
     public static class EnumHelper
     {
-
         public static string GetDescription<TEnum>(this TEnum enumValue)
         {
             var fi = enumValue.GetType().GetField(enumValue.ToString());
@@ -26,5 +20,20 @@ namespace bbt.notification.worker.Helper
             return enumValue.ToString();
         }
 
+        public static int[] ToIntArray(this System.Enum o)
+        {
+            return o.ToString()
+                .Split(new string[] { ", " }, StringSplitOptions.None)
+                .Select(i => (int)System.Enum.Parse(o.GetType(), i))
+                .ToArray();
+        }
+
+        public static object[] ToEnumArray(this System.Enum o)
+        {
+            return o.ToString()
+                .Split(new string[] { ", " }, StringSplitOptions.None)
+                .Select(i => System.Enum.Parse(o.GetType(), i))
+                .ToArray();
+        }
     }
 }

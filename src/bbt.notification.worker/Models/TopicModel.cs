@@ -1,3 +1,5 @@
+using bbt.notification.worker.Enum;
+
 namespace bbt.notification.worker.Models
 {
     public class TopicModel
@@ -24,7 +26,8 @@ namespace bbt.notification.worker.Models
         public string processName { get; set; }
         public string processItemId { get; set; }
         public List<SourceServices> ServiceUrlList { get; set; }
-
+        public int inheritanceType { get; set; }
+        public int alwaysSendType { get; set; }
     }
 
     public class SourceServices
