@@ -4,10 +4,8 @@ namespace bbt.notification.worker.Models
     {
         private readonly IConfiguration _config;
 
-
         public BaseModel()
         {
-
             var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
             var builder = new ConfigurationBuilder()
                 .AddJsonFile($"appsettings.json", true, true)
@@ -32,7 +30,6 @@ namespace bbt.notification.worker.Models
         {
             return _config.GetSection("MessagingGateway:EndPoints:SendSms").Value;
         }
-
         public string GetSendEmailEndpoint()
         {
             return _config.GetSection("MessagingGateway:EndPoints:SendEmail").Value;
@@ -45,6 +42,5 @@ namespace bbt.notification.worker.Models
         {
             return _config.GetSection("MessagingGateway:EndPoints:GetGeneratedMessage").Value;
         }
-
     }
 }

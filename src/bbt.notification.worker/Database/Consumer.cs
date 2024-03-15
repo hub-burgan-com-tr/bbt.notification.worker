@@ -1,5 +1,3 @@
-
-
 using bbt.notification.worker.Models;
 
 public class Consumer
@@ -18,5 +16,4 @@ public class Consumer
     public string Email { get; set; }
     public string DefinitionCode { get; set; }
     public bool IsStaff { get; set; }
-
 }

@@ -21,7 +21,7 @@ namespace bbt.notification.worker.Models
         public string definitionCode { get; set; }
     }
 
-        public class Phone
+    public class Phone
     {
         public int countryCode { get; set; }
         public int prefix { get; set; }

@@ -1,7 +1,3 @@
-
-
-using System.ComponentModel.DataAnnotations;
-
 public class SourceParameter
 {
     public Source Source { get; set; }

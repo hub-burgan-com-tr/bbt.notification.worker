@@ -11,8 +11,8 @@ namespace bbt.notification.worker
 {
     public class TopicConsumer : BaseConsumer<string>
     {
-        TopicModel topicModel;
         BaseModel baseModel = new BaseModel();
+        private TopicModel _topicModel;
         private readonly ITracer _tracer;
         private readonly ILogHelper _logHelper;
         private readonly IConfiguration _configuration;
@@ -21,166 +21,238 @@ namespace bbt.notification.worker
         KafkaSettings _kafkaSettings,
         CancellationToken _cancellationToken,
         ITracer tracer,
-        ILogger _logger, TopicModel _topicModel, ILogHelper logHelper, IConfiguration configuration) : base(_kafkaSettings, _cancellationToken, _logger)
+        ILogger _logger, TopicModel topicModel, ILogHelper logHelper, IConfiguration configuration) : base(_kafkaSettings, _cancellationToken, _logger)
         {
             _tracer = tracer;
-            topicModel = _topicModel;
+            _topicModel = topicModel;
             _logHelper = logHelper;
             _configuration = configuration;
-
         }
         public override async Task<bool> Process(string model)
         {
+            var retVal = true;
+
             await _tracer.CaptureTransaction("Process", ApiConstants.TypeRequest, async () =>
             {
                 try
                 {
-                    JObject obj = JObject.Parse(model);
-
-                    JToken clientId = obj.SelectToken(topicModel.clientIdJsonPath);
-
-                    var postConsumerDetailRequestModel = new PostConsumerDetailRequestModel
+                    if (model.Contains("cdctablenotificationreminderdbosources"))
                     {
-                        client = Convert.ToInt32(clientId),
-                        sourceId = Convert.ToInt32(Environment.GetEnvironmentVariable("Topic_Id") ?? _configuration.GetSection("TopicId").Value),
-                        jsonData = obj.SelectToken("message.data").ToString().Replace(Environment.NewLine, string.Empty)
-                    };
-
-                    if (topicModel.ServiceUrlList.Count > 0)
+                        await _tracer.CurrentTransaction.CaptureSpan("ProcessSourceUpdates", ApiConstants.TypeRequest, async () =>
+                         {
+                             retVal = await ProcessSourceUpdates(model);
+                         });
+                    }
+                    else
                     {
-                        foreach (var item in topicModel.ServiceUrlList)
+                        await _tracer.CurrentTransaction.CaptureSpan("ProcessNotifications", ApiConstants.TypeRequest, async () =>
                         {
-                            var enrichmentServiceRequestModel = new EnrichmentServiceRequestModel
-                            {
-                                customerId = Convert.ToInt32(clientId),
-                                dataModel = obj.SelectToken("message.data").ToString().Replace(Environment.NewLine, string.Empty)
-                            };
-
-                            var enrichmentServicesCall = new EnrichmentServicesCall(_tracer, _logHelper);
-
-                            var enrichmentServiceResponseModel = await enrichmentServicesCall.GetEnrichmentServiceAsync(item.ServiceUrl, enrichmentServiceRequestModel);
-
-                            if (enrichmentServiceResponseModel != null && !string.IsNullOrEmpty(enrichmentServiceResponseModel.dataModel))
-                            {
-                                postConsumerDetailRequestModel.jsonData = enrichmentServiceResponseModel.dataModel;
-                            }
-                        }
+                            retVal = await ProcessNotifications(model);
+                        });
                     }
-
-                    var alwaysSendTypeList = ((AlwaysSendType)topicModel.alwaysSendType).ToEnumArray();
-
-                    var notificationServicesCall = new NotificationServicesCall(_tracer, _logHelper, _configuration);
-                    var consumerModel = await notificationServicesCall.PostConsumerDetailAsync(postConsumerDetailRequestModel);
-
-                    if (HasValidServiceReference(topicModel.smsServiceReference) && HasConsumer(consumerModel) &&
-                        (consumerModel.consumers[0].isSmsEnabled || alwaysSendTypeList.Contains(AlwaysSendType.Sms)))
-                    {
-                        await SendSms(obj, consumerModel, postConsumerDetailRequestModel);
-                    }
-
-                    if (HasValidServiceReference(topicModel.emailServiceReference) && HasConsumer(consumerModel) &&
-                        (consumerModel.consumers[0].isEmailEnabled || alwaysSendTypeList.Contains(AlwaysSendType.EMail)))
-                    {
-                        await SendEmail(obj, consumerModel, postConsumerDetailRequestModel);
-                    }
-
-                    if (HasValidServiceReference(topicModel.pushServiceReference) && HasConsumer(consumerModel) &&
-                    (consumerModel.consumers[0].isPushEnabled || alwaysSendTypeList.Contains(AlwaysSendType.Push)))
-                    {
-                        await SendPush(obj, consumerModel, postConsumerDetailRequestModel);
-                    }
-
-                    return true;
                 }
                 catch (Exception e)
                 {
                     _logHelper.LogCreate(model, false, "Process", e.Message);
                     _tracer.CaptureException(e);
-                    return false;
+                    retVal = false;
                 }
             });
 
-            return true;
+            return retVal;
         }
-        public async Task<bool> SendSms(JObject obj, ConsumerModel consumerModel, PostConsumerDetailRequestModel postConsumerDetailRequestModel)
+
+        private async Task<bool> ProcessSourceUpdates(string model)
         {
             try
             {
-                DateTime kafkaDataTime = DateTime.Today;
+                if ("1" == CommonHelper.GetWorkerTopicId(_configuration))//model.Id == TopicId
+                {
+                    var serviceCall = new NotificationServicesCall(_tracer, _logHelper, _configuration);
+                    _topicModel = await serviceCall.GetTopicDetailsAsync();
+                }
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                _logHelper.LogCreate(model, false, "ProcessSourceUpdates", e.Message);
+                _tracer.CaptureException(e);
+                return false;
+            }
+        }
+
+        private async Task<bool> ProcessNotifications(string model)
+        {
+            try
+            {
+                var obj = JObject.Parse(model);
+                var clientId = Convert.ToInt32(obj.SelectToken(_topicModel.clientIdJsonPath));
+
+                var postConsumerDetailRequestModel = new PostConsumerDetailRequestModel
+                {
+                    client = clientId,
+                    sourceId = Convert.ToInt32(CommonHelper.GetWorkerTopicId(_configuration)),
+                    jsonData = obj.SelectToken("message.data").ToString().Replace(Environment.NewLine, string.Empty)
+                };
+
+                await SetTemplateData(postConsumerDetailRequestModel, obj, clientId);
+
+                var notificationServicesCall = new NotificationServicesCall(_tracer, _logHelper, _configuration);
+                var consumerModel = await notificationServicesCall.PostConsumerDetailAsync(postConsumerDetailRequestModel);
+
+                if (!HasConsumer(consumerModel))
+                {
+                    _logHelper.LogCreate(consumerModel, false, "ProcessNotifications", "Consumer null Client:" + clientId.ToString());
+                    return true;
+                }
+
+                if (ShouldSendNotification(consumerModel, NotificationTypeEnum.SMS))
+                {
+                    await SendSms(obj, consumerModel, postConsumerDetailRequestModel);
+                }
+
+                if (ShouldSendNotification(consumerModel, NotificationTypeEnum.EMAIL))
+                {
+                    await SendEmail(obj, consumerModel, postConsumerDetailRequestModel);
+                }
+
+                if (ShouldSendNotification(consumerModel, NotificationTypeEnum.PUSHNOTIFICATION))
+                {
+                    await SendPush(obj, consumerModel, postConsumerDetailRequestModel);
+                }
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                _logHelper.LogCreate(model, false, "ProcessNotifications", e.Message);
+                _tracer.CaptureException(e);
+                return false;
+            }
+        }
+
+        private async Task SetTemplateData(PostConsumerDetailRequestModel postConsumerDetailRequestModel, JObject obj, int clientId)
+        {
+            if (_topicModel.ServiceUrlList.Count <= 0)
+                return;
+
+            foreach (var item in _topicModel.ServiceUrlList)
+            {
+                var enrichmentServiceRequestModel = new EnrichmentServiceRequestModel
+                {
+                    customerId = clientId,
+                    dataModel = obj.SelectToken("message.data").ToString().Replace(Environment.NewLine, string.Empty)
+                };
+
+                var enrichmentServicesCall = new EnrichmentServicesCall(_tracer, _logHelper);
+
+                var enrichmentServiceResponseModel = await enrichmentServicesCall.GetEnrichmentServiceAsync(item.ServiceUrl, enrichmentServiceRequestModel);
+
+                if (enrichmentServiceResponseModel != null && !string.IsNullOrEmpty(enrichmentServiceResponseModel.dataModel))
+                {
+                    postConsumerDetailRequestModel.jsonData = enrichmentServiceResponseModel.dataModel;
+                }
+            }
+        }
+
+        private bool ShouldSendNotification(ConsumerModel consumerModel, NotificationTypeEnum notificationType)
+        {
+            var alwaysSendTypeList = ((AlwaysSendType)_topicModel.alwaysSendType).ToEnumArray();
+
+            if (notificationType == NotificationTypeEnum.SMS)
+            {
+                if (HasValidServiceReference(_topicModel.smsServiceReference) &&
+                   (consumerModel.consumers[0].isSmsEnabled || alwaysSendTypeList.Contains(AlwaysSendType.Sms)))
+                {
+                    return true;
+                }
+            }
+            else if (notificationType == NotificationTypeEnum.EMAIL)
+            {
+                if (HasValidServiceReference(_topicModel.emailServiceReference) &&
+                    (consumerModel.consumers[0].isEmailEnabled || alwaysSendTypeList.Contains(AlwaysSendType.EMail)))
+                {
+                    return true;
+
+                }
+            }
+            else if (notificationType == NotificationTypeEnum.PUSHNOTIFICATION)
+            {
+                if (HasValidServiceReference(_topicModel.pushServiceReference) &&
+                (consumerModel.consumers[0].isPushEnabled || alwaysSendTypeList.Contains(AlwaysSendType.Push)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private async Task<bool> SendSms(JObject obj, ConsumerModel consumerModel, PostConsumerDetailRequestModel postConsumerDetailRequestModel)
+        {
+            try
+            {
+                var kafkaDataTime = DateTime.Today;
 
                 if (!string.IsNullOrEmpty(obj.SelectToken("message.headers.timestamp").ToString()))
                 {
                     kafkaDataTime = Convert.ToDateTime(obj.SelectToken("message.headers.timestamp"));
                 }
 
-                JToken clientId = obj.SelectToken(topicModel.clientIdJsonPath);
+                var clientId = Convert.ToInt32(obj.SelectToken(_topicModel.clientIdJsonPath));
 
-                if (topicModel.RetentationTime == 0 || kafkaDataTime >= DateTime.Now.AddMinutes(-topicModel.RetentationTime))
+                if (_topicModel.RetentationTime != 0 && kafkaDataTime < DateTime.Now.AddMinutes(-_topicModel.RetentationTime))
                 {
-                    var path = baseModel.GetSendSmsEndpoint();
+                    _logHelper.LogCreate(clientId, false, "SendSms", "Kafka data is timeout");
+                    return false;
+                }
 
-                    if (HasConsumer(consumerModel))
-                    {
-                        var dengageRequestModel = new DengageRequestModel();
-                        dengageRequestModel.phone.countryCode = consumerModel.consumers[0].phone.countryCode;
-                        dengageRequestModel.phone.prefix = consumerModel.consumers[0].phone.prefix;
-                        dengageRequestModel.phone.number = consumerModel.consumers[0].phone.number;
-                        dengageRequestModel.template = topicModel.smsServiceReference;
-                        dengageRequestModel.templateParams = postConsumerDetailRequestModel.jsonData;
-                        dengageRequestModel.process.name = string.IsNullOrEmpty(topicModel.processName) ? topicModel.topic : topicModel.processName;
-                        dengageRequestModel.process.ItemId = GetProcessItemId(obj, topicModel.processItemId);
-                        dengageRequestModel.process.Action = "Notification";
-                        dengageRequestModel.process.Identity = "1";
+                var dengageRequestModel = new DengageRequestModel();
+                dengageRequestModel.phone.countryCode = consumerModel.consumers[0].phone.countryCode;
+                dengageRequestModel.phone.prefix = consumerModel.consumers[0].phone.prefix;
+                dengageRequestModel.phone.number = consumerModel.consumers[0].phone.number;
+                dengageRequestModel.template = _topicModel.smsServiceReference;
+                dengageRequestModel.templateParams = postConsumerDetailRequestModel.jsonData;
+                dengageRequestModel.process.name = string.IsNullOrEmpty(_topicModel.processName) ? _topicModel.topic : _topicModel.processName;
+                dengageRequestModel.process.ItemId = GetProcessItemId(obj, _topicModel.processItemId);
+                dengageRequestModel.process.Action = "Notification";
+                dengageRequestModel.process.Identity = "1";
 
-                        var respModel = new SendMessageResponseModel();
-                        var generatedMessageModel = new GeneratedMessage();
-                        var response = await ApiHelper.ApiClient.PostAsJsonAsync(path, dengageRequestModel);
+                var sendSmsPath = baseModel.GetSendSmsEndpoint();
+                var response = await ApiHelper.ApiClient.PostAsJsonAsync(sendSmsPath, dengageRequestModel);
+                var respModel = await response.Content.ReadAsAsync<SendMessageResponseModel>();
 
-                        if (response.IsSuccessStatusCode)
-                        {
-                            respModel = await response.Content.ReadAsAsync<SendMessageResponseModel>();
-
-                            if (respModel != null && respModel.TxnId != null)
-                            {
-                                var pathGeneratedMessage = baseModel.GetGeneratedMessageEndPoint().Replace("{txnId}", respModel.TxnId.ToString());
-
-                                var htpResponse = await ApiHelper.ApiClient.GetAsync(pathGeneratedMessage);
-
-                                if (htpResponse.IsSuccessStatusCode)
-                                {
-                                    generatedMessageModel = await htpResponse.Content.ReadAsAsync<GeneratedMessage>();
-
-                                    if (generatedMessageModel != null)
-                                    {
-                                        _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId, consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number : null, "", dengageRequestModel, response, NotificationTypeEnum.SMS.GetHashCode(), response.StatusCode.ToString(), generatedMessageModel.Content, consumerModel.consumers[0].isStaff);
-                                    }
-                                    else
-                                    {
-                                        _logHelper.LogCreate(path, generatedMessageModel, "SendSmsContentResponseModel", "Content is null");
-                                    }
-                                }
-                                else
-                                {
-                                    _logHelper.LogCreate(path, htpResponse, "SendSmsContentError", "GeneratedMessage status false");
-                                }
-                            }
-                            else
-                            {
-                                _logHelper.LogCreate(respModel, false, "SendSmsContentResponseTxnModel", "TxnId is null");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        _logHelper.LogCreate(Convert.ToInt32(clientId), false, "SendSms", "Consumer null");
-
-                        return false;
-                    }
+                if (respModel == null || respModel.TxnId == null)
+                {
+                    _logHelper.LogCreate(respModel, false, "SendSmsContentResponseTxnModel", "TxnId is null");
                 }
                 else
                 {
-                    _logHelper.LogCreate(Convert.ToInt32(clientId), false, "SendSms", "Kafka data is timeout");
-                    return false;
+                    var pathGeneratedMessage = baseModel.GetGeneratedMessageEndPoint().Replace("{txnId}", respModel.TxnId.ToString());
+
+                    var htpResponse = await ApiHelper.ApiClient.GetAsync(pathGeneratedMessage);
+
+                    if (!htpResponse.IsSuccessStatusCode)
+                    {
+                        _logHelper.LogCreate(sendSmsPath, htpResponse, "SendSmsContentError", "GeneratedMessage status false");
+                    }
+                    else
+                    {
+                        var generatedMessageModel = await htpResponse.Content.ReadAsAsync<GeneratedMessage>();
+
+                        if (generatedMessageModel == null)
+                        {
+                            _logHelper.LogCreate(sendSmsPath, generatedMessageModel, "SendSmsContentResponseModel", "Content is null");
+                        }
+                        else
+                        {
+                            _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId,
+                                consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number : null,
+                                "", dengageRequestModel, response, NotificationTypeEnum.SMS.GetHashCode(), response.StatusCode.ToString(),
+                                generatedMessageModel.Content, consumerModel.consumers[0].isStaff);
+                        }
+                    }
                 }
 
                 return true;
@@ -192,80 +264,67 @@ namespace bbt.notification.worker
                 return false;
             }
         }
-        public async Task<bool> SendEmail(JObject obj, ConsumerModel consumerModel, PostConsumerDetailRequestModel postConsumerDetailRequestModel)
+        private async Task<bool> SendEmail(JObject obj, ConsumerModel consumerModel, PostConsumerDetailRequestModel postConsumerDetailRequestModel)
         {
             try
             {
                 var emailRequestModel = new EmailRequestModel();
-                var path = baseModel.GetSendEmailEndpoint();
+                emailRequestModel.CustomerNo = consumerModel.consumers[0].client;
+                emailRequestModel.Email = consumerModel.consumers[0].email;
 
-                if (HasConsumer(consumerModel))
+                if (string.IsNullOrEmpty(emailRequestModel.Email))
                 {
-                    emailRequestModel.CustomerNo = consumerModel.consumers[0].client;
-                    emailRequestModel.Email = consumerModel.consumers[0].email;
+                    _logHelper.LogCreate("CustomerNo=>" + emailRequestModel.CustomerNo, false, "SendEmail", " Email address is null");
+                    return false;
+                }
 
-                    if (!string.IsNullOrEmpty(emailRequestModel.Email))
-                    {
-                        emailRequestModel.TemplateParams = postConsumerDetailRequestModel.jsonData;
-                        emailRequestModel.Template = topicModel.emailServiceReference;
-                        emailRequestModel.Process = new DengageRequestModel.Process();
-                        emailRequestModel.Process.name = string.IsNullOrEmpty(topicModel.processName) ? topicModel.topic : topicModel.processName;
-                        emailRequestModel.Process.ItemId = GetProcessItemId(obj, topicModel.processItemId);
-                        emailRequestModel.Process.Action = "Notification";
-                        emailRequestModel.Process.Identity = "1";
+                emailRequestModel.TemplateParams = postConsumerDetailRequestModel.jsonData;
+                emailRequestModel.Template = _topicModel.emailServiceReference;
+                emailRequestModel.Process = new DengageRequestModel.Process();
+                emailRequestModel.Process.name = string.IsNullOrEmpty(_topicModel.processName) ? _topicModel.topic : _topicModel.processName;
+                emailRequestModel.Process.ItemId = GetProcessItemId(obj, _topicModel.processItemId);
+                emailRequestModel.Process.Action = "Notification";
+                emailRequestModel.Process.Identity = "1";
 
-                        var respModel = new SendMessageResponseModel();
-                        var generatedMessageModel = new GeneratedMessage();
-                        var response = await ApiHelper.ApiClient.PostAsJsonAsync(path, emailRequestModel);
+                var sendEmailPath = baseModel.GetSendEmailEndpoint();
+                var response = await ApiHelper.ApiClient.PostAsJsonAsync(sendEmailPath, emailRequestModel);
 
-                        if (response.IsSuccessStatusCode)
-                        {
-                            respModel = await response.Content.ReadAsAsync<SendMessageResponseModel>();
+                var respModel = await response.Content.ReadAsAsync<SendMessageResponseModel>();
 
-                            if (respModel != null && respModel.TxnId != null)
-                            {
-                                var pathGeneratedMessage = baseModel.GetGeneratedMessageEndPoint().Replace("{txnId}", respModel.TxnId.ToString());
-
-                                var htpResponse = await ApiHelper.ApiClient.GetAsync(pathGeneratedMessage);
-
-                                if (htpResponse.IsSuccessStatusCode)
-                                {
-                                    generatedMessageModel = await htpResponse.Content.ReadAsAsync<GeneratedMessage>();
-
-                                    if (generatedMessageModel != null)
-                                    {
-                                        _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId, "", consumerModel.consumers[0] != null ? consumerModel.consumers[0].email : null, emailRequestModel, response, NotificationTypeEnum.EMAIL.GetHashCode(), response.StatusCode.ToString(), generatedMessageModel.Content, consumerModel.consumers[0].isStaff);
-
-                                    }
-                                    else
-                                    {
-                                        _logHelper.LogCreate(path, generatedMessageModel, "SendEmailContentResponseModel", "Content is null");
-                                    }
-                                }
-                                else
-                                {
-                                    _logHelper.LogCreate(path, htpResponse, "SendEmailContentError", "GeneratedMessage status false");
-                                }
-
-                            }
-                            else
-                            {
-                                _logHelper.LogCreate(respModel, false, "SendEmailContentResponseTxnModel", "TxnId is null");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        _logHelper.LogCreate("CustomerNo=>" + emailRequestModel.CustomerNo, false, "SendEmail", " Email address is null");
-                        return false;
-                    }
+                if (respModel == null || respModel.TxnId == null)
+                {
+                    _logHelper.LogCreate(respModel, false, "SendEmailContentResponseTxnModel", "TxnId is null");
                 }
                 else
                 {
-                    JToken clientId = obj.SelectToken(topicModel.clientIdJsonPath);
-                    _logHelper.LogCreate(Convert.ToInt32(clientId), false, "SendEmail", "Consumer  null");
-                    return false;
+                    var pathGeneratedMessage = baseModel.GetGeneratedMessageEndPoint().Replace("{txnId}", respModel.TxnId.ToString());
+
+                    var htpResponse = await ApiHelper.ApiClient.GetAsync(pathGeneratedMessage);
+
+                    if (!htpResponse.IsSuccessStatusCode)
+                    {
+                        _logHelper.LogCreate(sendEmailPath, htpResponse, "SendEmailContentError", "GeneratedMessage status false");
+                    }
+                    else
+                    {
+                        var generatedMessageModel = await htpResponse.Content.ReadAsAsync<GeneratedMessage>();
+
+                        if (generatedMessageModel == null)
+                        {
+                            _logHelper.LogCreate(sendEmailPath, generatedMessageModel, "SendEmailContentResponseModel", "Content is null");
+                        }
+                        else
+                        {
+                            _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId, "",
+                                consumerModel.consumers[0] != null ? consumerModel.consumers[0].email : null,
+                                emailRequestModel, response, NotificationTypeEnum.EMAIL.GetHashCode(), response.StatusCode.ToString(),
+                                generatedMessageModel.Content, consumerModel.consumers[0].isStaff);
+
+                        }
+                    }
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
@@ -273,72 +332,56 @@ namespace bbt.notification.worker
                 _tracer.CaptureException(ex);
                 return false;
             }
-            return true;
         }
 
-        public async Task<bool> SendPush(JObject obj, ConsumerModel consumerModel, PostConsumerDetailRequestModel postConsumerDetailRequestModel)
+        private async Task<bool> SendPush(JObject obj, ConsumerModel consumerModel, PostConsumerDetailRequestModel postConsumerDetailRequestModel)
         {
             try
             {
                 var pushNotificationRequestModel = new PushNotificaitonRequestModel();
-                var path = baseModel.GetSendPushnotificationEndpoint();
+                pushNotificationRequestModel.CustomerNo = consumerModel.consumers[0].client.ToString();
+                pushNotificationRequestModel.TemplateParams = postConsumerDetailRequestModel.jsonData;
+                pushNotificationRequestModel.Template = _topicModel.pushServiceReference;
+                pushNotificationRequestModel.SaveInbox = _topicModel.saveInbox;
+                pushNotificationRequestModel.Process = new DengageRequestModel.Process();
+                pushNotificationRequestModel.Process.name = string.IsNullOrEmpty(_topicModel.processName) ? _topicModel.topic : _topicModel.processName;
+                pushNotificationRequestModel.Process.ItemId = GetProcessItemId(obj, _topicModel.processItemId);
+                pushNotificationRequestModel.Process.Action = "Notification";
+                pushNotificationRequestModel.Process.Identity = "1";
 
-                if (HasConsumer(consumerModel))
+                var sendPushPath = baseModel.GetSendPushnotificationEndpoint();
+                var response = await ApiHelper.ApiClient.PostAsJsonAsync(sendPushPath, pushNotificationRequestModel);
+                var respModel = await response.Content.ReadAsAsync<SendMessageResponseModel>();
+
+                if (respModel == null || respModel.TxnId == null)
                 {
-                    pushNotificationRequestModel.CustomerNo = consumerModel.consumers[0].client.ToString();
-                    pushNotificationRequestModel.TemplateParams = postConsumerDetailRequestModel.jsonData;
-
-                    pushNotificationRequestModel.Template = topicModel.pushServiceReference;
-                    pushNotificationRequestModel.SaveInbox = topicModel.saveInbox;
-                    pushNotificationRequestModel.Process = new DengageRequestModel.Process();
-                    pushNotificationRequestModel.Process.name = string.IsNullOrEmpty(topicModel.processName) ? topicModel.topic : topicModel.processName;
-                    pushNotificationRequestModel.Process.ItemId = GetProcessItemId(obj, topicModel.processItemId);
-                    pushNotificationRequestModel.Process.Action = "Notification";
-                    pushNotificationRequestModel.Process.Identity = "1";
-
-                    var respModel = new SendMessageResponseModel();
-                    var generatedMessageModel = new GeneratedMessage();
-                    var response = await ApiHelper.ApiClient.PostAsJsonAsync(path, pushNotificationRequestModel);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        respModel = await response.Content.ReadAsAsync<SendMessageResponseModel>();
-
-                        if (respModel != null && respModel.TxnId != null)
-                        {
-                            var pathGeneratedMessage = baseModel.GetGeneratedMessageEndPoint().Replace("{txnId}", respModel.TxnId.ToString());
-                            var htpResponse = await ApiHelper.ApiClient.GetAsync(pathGeneratedMessage);
-
-                            if (htpResponse.IsSuccessStatusCode)
-                            {
-                                generatedMessageModel = await htpResponse.Content.ReadAsAsync<GeneratedMessage>();
-
-                                if (generatedMessageModel != null)
-                                {
-                                    _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId, consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number : null, "", JsonConvert.SerializeObject(pushNotificationRequestModel, Formatting.Indented), response, NotificationTypeEnum.PUSHNOTIFICATION.GetHashCode(), response.StatusCode.ToString(), generatedMessageModel.Content, consumerModel.consumers[0].isStaff);
-                                }
-                                else
-                                {
-                                    _logHelper.LogCreate(path, generatedMessageModel, "SendPushContentResponseModel", "Content is null");
-                                }
-                            }
-                            else
-                            {
-                                _logHelper.LogCreate(path, htpResponse, "SendPushContentError", "GeneratedMessage status false");
-                            }
-                        }
-                        else
-                        {
-                            _logHelper.LogCreate(respModel, false, "SendPushContentResponseTxnModel", "TxnId is null");
-                        }
-                    }
+                    _logHelper.LogCreate(respModel, false, "SendPushContentResponseTxnModel", "TxnId is null");
                 }
                 else
                 {
-                    _logHelper.LogCreate("consumerModel", false, "SendPushNotification", "Consumer null");
+                    var pathGeneratedMessage = baseModel.GetGeneratedMessageEndPoint().Replace("{txnId}", respModel.TxnId.ToString());
+                    var htpResponse = await ApiHelper.ApiClient.GetAsync(pathGeneratedMessage);
 
-                    return false;
+                    if (!htpResponse.IsSuccessStatusCode)
+                    {
+                        _logHelper.LogCreate(sendPushPath, htpResponse, "SendPushContentError", "GeneratedMessage status false");
+                    }
+                    else
+                    {
+                        var generatedMessageModel = await htpResponse.Content.ReadAsAsync<GeneratedMessage>();
+
+                        if (generatedMessageModel == null)
+                        {
+                            _logHelper.LogCreate(sendPushPath, generatedMessageModel, "SendPushContentResponseModel", "Content is null");
+                        }
+                        else
+                        {
+                            _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId, consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number : null, "", JsonConvert.SerializeObject(pushNotificationRequestModel, Formatting.Indented), response, NotificationTypeEnum.PUSHNOTIFICATION.GetHashCode(), response.StatusCode.ToString(), generatedMessageModel.Content, consumerModel.consumers[0].isStaff);
+                        }
+                    }
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
@@ -346,8 +389,6 @@ namespace bbt.notification.worker
                 _tracer.CaptureException(ex);
                 return false;
             }
-
-            return true;
         }
         private static string GetJsonValue(JObject obj, string path)
         {
