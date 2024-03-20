@@ -37,10 +37,10 @@ public class Worker : BackgroundService
 
                 var serviceCall = new NotificationServicesCall(tracer, logHelper, _configuration);
                 var topicModel = await serviceCall.GetTopicDetailsAsync();
-                
+
                 if (topicModel != null)
                 {
-                    kafkaSettings.Topic = new string[] { topicModel.topic, "ReminderSources" };
+                    kafkaSettings.Topic = new string[] { topicModel.topic, "ENT.ReminderSources" };
                     kafkaSettings.BootstrapServers = topicModel.kafkaUrl;
                     kafkaSettings.GroupId = topicModel.title_TR;
                     kafkaSettings.SslCaLocation = topicModel.kafkaCertificate;

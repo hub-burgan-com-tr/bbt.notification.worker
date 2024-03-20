@@ -66,7 +66,9 @@ namespace bbt.notification.worker
         {
             try
             {
-                if ("1" == CommonHelper.GetWorkerTopicId(_configuration))//model.Id == TopicId
+                var obj = JObject.Parse(model);
+
+                if (obj.SelectToken("message.data.Id").ToString() == CommonHelper.GetWorkerTopicId(_configuration))
                 {
                     var serviceCall = new NotificationServicesCall(_tracer, _logHelper, _configuration);
                     _topicModel = await serviceCall.GetTopicDetailsAsync();
@@ -160,30 +162,29 @@ namespace bbt.notification.worker
         {
             var alwaysSendTypeList = ((AlwaysSendType)_topicModel.alwaysSendType).ToEnumArray();
 
-            if (notificationType == NotificationTypeEnum.SMS)
+            switch (notificationType)
             {
-                if (HasValidServiceReference(_topicModel.smsServiceReference) &&
-                   (consumerModel.consumers[0].isSmsEnabled || alwaysSendTypeList.Contains(AlwaysSendType.Sms)))
-                {
-                    return true;
-                }
-            }
-            else if (notificationType == NotificationTypeEnum.EMAIL)
-            {
-                if (HasValidServiceReference(_topicModel.emailServiceReference) &&
-                    (consumerModel.consumers[0].isEmailEnabled || alwaysSendTypeList.Contains(AlwaysSendType.EMail)))
-                {
-                    return true;
-
-                }
-            }
-            else if (notificationType == NotificationTypeEnum.PUSHNOTIFICATION)
-            {
-                if (HasValidServiceReference(_topicModel.pushServiceReference) &&
-                (consumerModel.consumers[0].isPushEnabled || alwaysSendTypeList.Contains(AlwaysSendType.Push)))
-                {
-                    return true;
-                }
+                case NotificationTypeEnum.SMS:
+                    if (HasValidServiceReference(_topicModel.smsServiceReference) &&
+                         (consumerModel.consumers[0].isSmsEnabled || alwaysSendTypeList.Contains(AlwaysSendType.Sms)))
+                    {
+                        return true;
+                    }
+                    break;
+                case NotificationTypeEnum.EMAIL:
+                    if (HasValidServiceReference(_topicModel.emailServiceReference) &&
+                        (consumerModel.consumers[0].isEmailEnabled || alwaysSendTypeList.Contains(AlwaysSendType.EMail)))
+                    {
+                        return true;
+                    }
+                    break;
+                case NotificationTypeEnum.PUSHNOTIFICATION:
+                    if (HasValidServiceReference(_topicModel.pushServiceReference) &&
+                        (consumerModel.consumers[0].isPushEnabled || alwaysSendTypeList.Contains(AlwaysSendType.Push)))
+                    {
+                        return true;
+                    }
+                    break;
             }
 
             return false;
@@ -221,6 +222,10 @@ namespace bbt.notification.worker
 
                 var sendSmsPath = baseModel.GetSendSmsEndpoint();
                 var response = await ApiHelper.ApiClient.PostAsJsonAsync(sendSmsPath, dengageRequestModel);
+
+                if (!response.IsSuccessStatusCode)
+                    return true;
+
                 var respModel = await response.Content.ReadAsAsync<SendMessageResponseModel>();
 
                 if (respModel == null || respModel.TxnId == null)
@@ -289,6 +294,9 @@ namespace bbt.notification.worker
                 var sendEmailPath = baseModel.GetSendEmailEndpoint();
                 var response = await ApiHelper.ApiClient.PostAsJsonAsync(sendEmailPath, emailRequestModel);
 
+                if (!response.IsSuccessStatusCode)
+                    return true;
+
                 var respModel = await response.Content.ReadAsAsync<SendMessageResponseModel>();
 
                 if (respModel == null || respModel.TxnId == null)
@@ -351,6 +359,10 @@ namespace bbt.notification.worker
 
                 var sendPushPath = baseModel.GetSendPushnotificationEndpoint();
                 var response = await ApiHelper.ApiClient.PostAsJsonAsync(sendPushPath, pushNotificationRequestModel);
+
+                if (!response.IsSuccessStatusCode)
+                    return true;
+
                 var respModel = await response.Content.ReadAsAsync<SendMessageResponseModel>();
 
                 if (respModel == null || respModel.TxnId == null)
