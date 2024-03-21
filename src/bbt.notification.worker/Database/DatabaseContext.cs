@@ -1,6 +1,4 @@
-﻿
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 public class DatabaseContext : DbContext
 {
@@ -20,8 +18,6 @@ public class DatabaseContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
-        //options.UseSqlite($"Data Source={DbPath}");
-
         Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
         IConfigurationRoot configuration = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
@@ -33,7 +29,6 @@ public class DatabaseContext : DbContext
         options.EnableSensitiveDataLogging();
     }
 
-
     string? GetEnviroment()
     {
         return Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
@@ -41,26 +36,12 @@ public class DatabaseContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
-
         builder.Entity<Consumer>().OwnsOne(e => e.Phone);
-
-        // builder.Entity<NotificationLog>().OwnsOne(e => e.Phone);
-
-
-        /* TODO: SQL Edge not supporting memory optimized tables
-        builder.Entity<Consumer>(c =>
-        {
-            c.OwnsOne(e => e.Phone).IsMemoryOptimized();
-            c.IsMemoryOptimized();
-        });
-        */
 
         builder.Entity<Source>()
             .HasOne(s => s.Parent)
             .WithMany(s => s.Children)
             .HasForeignKey(s => s.ParentId);
-
-
 
         builder.Entity<Consumer>()
            .Property<long>("$id")
@@ -77,23 +58,6 @@ public class DatabaseContext : DbContext
 
         builder.Entity<SourceParameter>().HasKey(pc => new { pc.SourceId, pc.JsonPath, pc.Type });
 
-        //builder.Entity<Source>().HasData(
-        //  new Source
-        //  {
-        //      Id = 1,
-        //      Title_TR = "CashBackTR",
-        //      Title_EN = "CashBackEN",
-        //      DisplayType = SourceDisplayType.NotDisplay,
-        //      Topic = "CAMPAIGN_CASHBACK_ACCOUNTING_INFO",
-        //      KafkaUrl = "x",
-        //      ApiKey = "",
-        //      Secret = "",
-        //      PushServiceReference = "notify_push_incoming_eft",
-        //      SmsServiceReference = "9cab7fdc-76a4-44be-b6fa-101f13729875",
-        //      EmailServiceReference = "notify_email_incoming_eft",
-        //      KafkaCertificate = "x"
-        //  });
-
         builder.Entity<Consumer>(c =>
         {
             c.HasData(
@@ -109,40 +73,13 @@ public class DatabaseContext : DbContext
                 IsStaff = false,
                 DefinitionCode = "accountMoneyEntry",
                 DeviceKey = "",
-                Email="",
-                Filter="",
-                
-});
-         //   c.OwnsOne(e => e.Phone).HasData(new { ConsumerId = new Guid("2e15d57c-26e3-4e78-94f9-8649b3302555"), CountryCode = 90, Prefix = 530, Number = 3855206 });
+                Email = "",
+                Filter = "",
+
+            });
+
         });
 
-        //builder.Entity<Consumer>(c =>
-        //{
-        //    c.HasData(
-        //    new Consumer
-        //    {
-        //        Id = new Guid("3e15d57c-26e3-4e78-94f9-8649b3302555"),
-        //        Client = (long)0,
-        //        User = (long)0,
-        //        SourceId = 1,
-        //        Filter = "",
-        //        IsPushEnabled = false,
-        //        IsSmsEnabled = true,
-        //        IsEmailEnabled = false,
-        //        IsStaff = false,
-        //        DefinitionCode = "accountMoneyEntry",
-        //        DeviceKey = ""
-        //    });
-        //    c.OwnsOne(e => e.Phone).HasData(new { ConsumerId = new Guid("3e15d57c-26e3-4e78-94f9-8649b3302555"), CountryCode = 90, Prefix = 530, Number = 3855206 });
-        //});
-        //builder.Entity<SourceService>().HasData(
-        //  new SourceService
-        //  {
-        //      Id = 1,
-        //      SourceId = 1,
-        //      ServiceUrl = "X",
-
-        //  });
         builder.Entity<Log>()
                     .Property(f => f.Id)
                     .ValueGeneratedOnAdd();
@@ -155,11 +92,9 @@ public class DatabaseContext : DbContext
                  .Property(f => f.Id)
                  .ValueGeneratedOnAdd();
 
-
         builder.Entity<NotificationLog>()
            .Property(f => f.Id)
            .ValueGeneratedOnAdd();
-
 
         builder.Entity<NotificationLog>()
                  .ToTable("NotificationLogs", b => b.IsTemporal());
@@ -167,10 +102,5 @@ public class DatabaseContext : DbContext
         builder.Entity<ProductCode>()
                   .Property(f => f.Id)
                   .ValueGeneratedOnAdd();
-
-
-
-
-
     }
 }

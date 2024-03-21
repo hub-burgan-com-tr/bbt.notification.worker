@@ -1,6 +1,4 @@
-﻿
-using System.ComponentModel.DataAnnotations;
-public enum SourceParameterType
+﻿public enum SourceParameterType
 {
     TextContains,
     TextMatch,

@@ -24,16 +24,13 @@ namespace bbt.notification.worker.Helper
                         ErrorDate = DateTime.Now,
                         ErrorMessage = errorMessage,
                         RequestData = JsonConvert.SerializeObject(requestModel),
-                        ResponseData = JsonConvert.SerializeObject(responseModel)
-                        
+                        ResponseData = JsonConvert.SerializeObject(responseModel)                        
                     });
 
                     db.SaveChanges();
 
-                    return true;
-                    
+                    return true;                    
                 }
-
                 catch (Exception e)
                 {
                     Console.WriteLine("DB ERROR =>" + e.Message);
@@ -49,8 +46,7 @@ namespace bbt.notification.worker.Helper
             using (var db = new DatabaseContext())
             {
                 try
-                {
-             
+                {             
                     db.Add(new MessageNotificationLog
                     {
                         CustomerNo = CustomerNo,
@@ -69,7 +65,6 @@ namespace bbt.notification.worker.Helper
                     db.SaveChanges();
                     return true;
                 }
-
                 catch (Exception e)
                 {
                     Console.WriteLine("DB ERROR =>" + e.Message);
@@ -77,8 +72,6 @@ namespace bbt.notification.worker.Helper
                     return false;
                 }
             }
-        }
-
-       
+        }       
     }
 }

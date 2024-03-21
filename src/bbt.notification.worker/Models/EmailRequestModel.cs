@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static bbt.notification.worker.Models.DengageRequestModel;
+﻿using static bbt.notification.worker.Models.DengageRequestModel;
 
 namespace bbt.notification.worker.Models
 {

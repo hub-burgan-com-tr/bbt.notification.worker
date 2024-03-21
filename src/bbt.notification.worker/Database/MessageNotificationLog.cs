@@ -1,7 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-
-
 public class MessageNotificationLog
 {
     [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -21,7 +19,4 @@ public class MessageNotificationLog
     public DateTime? ReadTime { get; set; }
     public DateTime? DeleteTime { get; set; }
     public bool IsStaff { get; set; }
-
-
 }
-

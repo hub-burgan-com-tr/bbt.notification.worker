@@ -1,7 +1,6 @@
 using bbt.notification.worker.Helper;
 using bbt.notification.worker.Models;
 using Elastic.Apm.Api;
-using Newtonsoft.Json;
 using System.Reflection;
 
 namespace bbt.notification.worker

@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-
 public class Log
 {
     [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -12,6 +11,4 @@ public class Log
     public string RequestData { get; set; }
     public string ErrorMessage { get; set; }
     public DateTime ErrorDate { get; set; }
-
 }
-

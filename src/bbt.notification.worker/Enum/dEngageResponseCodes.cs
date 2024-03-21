@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace bbt.notification.worker.Enum
+﻿namespace bbt.notification.worker.Enum
 {
     public enum dEngageResponseCodes
     {
@@ -14,7 +8,5 @@ namespace bbt.notification.worker.Enum
         NotAllowed = 403,
         NotFound = 404,
         TooManyRequest = 429
-
-
     }
 }

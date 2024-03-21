@@ -1,5 +1,3 @@
-using bbt.notification.worker.Enum;
-
 namespace bbt.notification.worker.Models
 {
     public class TopicModel

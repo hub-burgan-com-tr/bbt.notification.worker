@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 
 public class NotificationLog
 {
@@ -16,10 +10,6 @@ public class NotificationLog
     public long User { get; set; }
     public string Filter { get; set; }
     public bool IsPushEnabled { get; set; }
-
     public bool IsSmsEnabled { get; set; }
-
     public bool IsEmailEnabled { get; set; }
-
 }
-
