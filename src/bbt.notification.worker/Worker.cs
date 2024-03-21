@@ -40,7 +40,7 @@ public class Worker : BackgroundService
 
                 if (topicModel != null)
                 {
-                    kafkaSettings.Topic = new string[] { topicModel.topic, "ENT.ReminderSources" };
+                    kafkaSettings.Topic = new string[] { topicModel.topic };
                     kafkaSettings.BootstrapServers = topicModel.kafkaUrl;
                     kafkaSettings.GroupId = topicModel.title_TR;
                     kafkaSettings.SslCaLocation = topicModel.kafkaCertificate;
