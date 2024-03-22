@@ -68,7 +68,8 @@ namespace bbt.notification.worker
             {
                 var obj = JObject.Parse(model);
 
-                if (obj.SelectToken("message.data.Id").ToString() == CommonHelper.GetWorkerTopicId(_configuration))
+                if (obj.SelectToken("message.data.Id").ToString() == CommonHelper.GetWorkerTopicId(_configuration) 
+                    && obj.SelectToken("message.headers.operation").ToString() == "UPDATE")
                 {
                     var serviceCall = new NotificationServicesCall(_tracer, _logHelper, _configuration);
                     _topicModel = await serviceCall.GetTopicDetailsAsync();
