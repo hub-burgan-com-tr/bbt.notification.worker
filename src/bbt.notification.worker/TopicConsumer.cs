@@ -68,7 +68,7 @@ namespace bbt.notification.worker
             {
                 var obj = JObject.Parse(model);
 
-                if (obj.SelectToken("message.data.Id").ToString() == CommonHelper.GetWorkerTopicId(_configuration) 
+                if (obj.SelectToken("message.data.Id").ToString() == CommonHelper.GetWorkerTopicId(_configuration)
                     && obj.SelectToken("message.headers.operation").ToString() == "UPDATE")
                 {
                     var serviceCall = new NotificationServicesCall(_tracer, _logHelper, _configuration);
@@ -347,16 +347,22 @@ namespace bbt.notification.worker
         {
             try
             {
-                var pushNotificationRequestModel = new PushNotificaitonRequestModel();
-                pushNotificationRequestModel.CustomerNo = consumerModel.consumers[0].client.ToString();
-                pushNotificationRequestModel.TemplateParams = postConsumerDetailRequestModel.jsonData;
-                pushNotificationRequestModel.Template = _topicModel.pushServiceReference;
-                pushNotificationRequestModel.SaveInbox = _topicModel.saveInbox;
-                pushNotificationRequestModel.Process = new DengageRequestModel.Process();
-                pushNotificationRequestModel.Process.name = string.IsNullOrEmpty(_topicModel.processName) ? _topicModel.topic : _topicModel.processName;
-                pushNotificationRequestModel.Process.ItemId = GetProcessItemId(obj, _topicModel.processItemId);
-                pushNotificationRequestModel.Process.Action = "Notification";
-                pushNotificationRequestModel.Process.Identity = "1";
+                var pushNotificationRequestModel = new PushNotificaitonRequestModel
+                {
+                    CustomerNo = consumerModel.consumers[0].client.ToString(),
+                    TemplateParams = postConsumerDetailRequestModel.jsonData,
+                    Template = _topicModel.pushServiceReference,
+                    SaveInbox = _topicModel.saveInbox,
+                    NotificationType = _topicModel.productCodeName,
+
+                    Process = new DengageRequestModel.Process
+                    {
+                        name = string.IsNullOrEmpty(_topicModel.processName) ? _topicModel.topic : _topicModel.processName,
+                        ItemId = GetProcessItemId(obj, _topicModel.processItemId),
+                        Action = "Notification",
+                        Identity = "1"
+                    }
+                };
 
                 var sendPushPath = baseModel.GetSendPushnotificationEndpoint();
                 var response = await ApiHelper.ApiClient.PostAsJsonAsync(sendPushPath, pushNotificationRequestModel);
