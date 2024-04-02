@@ -36,10 +36,6 @@ namespace bbt.notification.worker
             {
                 try
                 {
-                    Console.WriteLine("model:" + model);
-
-                    Console.WriteLine("If contains source cdc:" + (model.Contains("cdctablenotificationreminderdbosources")).ToString());
-
                     if (model.Contains("cdctablenotificationreminderdbosources"))
                     {
                         await _tracer.CurrentTransaction.CaptureSpan("ProcessSourceUpdates", ApiConstants.TypeRequest, async () =>
@@ -72,19 +68,12 @@ namespace bbt.notification.worker
             {
                 var obj = JObject.Parse(model);
 
-                Console.WriteLine("message.data.Id:" + (obj.SelectToken("message.data.Id").ToString()).ToString());
-                Console.WriteLine("GetWorkerTopicId:" + (CommonHelper.GetWorkerTopicId(_configuration)).ToString());
-                Console.WriteLine("message.headers.operation:" + (obj.SelectToken("message.headers.operation").ToString()).ToString());
-
                 if (obj.SelectToken("message.data.Id").ToString().Trim() == CommonHelper.GetWorkerTopicId(_configuration).Trim()
                     && obj.SelectToken("message.headers.operation").ToString().Trim() == "UPDATE")
                 {
-                    Console.WriteLine("GetTopicDetailsAsync if true");
 
                     var serviceCall = new NotificationServicesCall(_tracer, _logHelper, _configuration);
                     _topicModel = await serviceCall.GetTopicDetailsAsync();
-
-                    Console.WriteLine("_topicModel" + (Newtonsoft.Json.JsonConvert.SerializeObject(_topicModel)));
                 }
 
                 return true;
