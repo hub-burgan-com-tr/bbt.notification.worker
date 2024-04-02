@@ -14,12 +14,11 @@ namespace bbt.notification.worker.Models
         public string apiKey { get; set; }
         public string secret { get; set; }
         public string clientIdJsonPath { get; set; }
-        public string kafkaUrl { get; set; }
-     
+        public string kafkaUrl { get; set; }     
         public  string kafkaCertificate { get; set; }
-
         public int RetentationTime { get; set; }
         public int? productCodeId { get; set; }
+        public string productCodeName { get; set; }
         public bool saveInbox { get; set; }
         public string processName { get; set; }
         public string processItemId { get; set; }
