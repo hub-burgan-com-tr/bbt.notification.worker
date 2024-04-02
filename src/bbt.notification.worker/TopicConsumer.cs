@@ -76,9 +76,11 @@ namespace bbt.notification.worker
                 Console.WriteLine("GetWorkerTopicId:" + (CommonHelper.GetWorkerTopicId(_configuration)).ToString());
                 Console.WriteLine("message.headers.operation:" + (obj.SelectToken("message.headers.operation").ToString()).ToString());
 
-                if (obj.SelectToken("message.data.Id").ToString() == CommonHelper.GetWorkerTopicId(_configuration)
-                    && obj.SelectToken("message.headers.operation").ToString() == "UPDATE")
+                if (obj.SelectToken("message.data.Id").ToString().Trim() == CommonHelper.GetWorkerTopicId(_configuration).Trim()
+                    && obj.SelectToken("message.headers.operation").ToString().Trim() == "UPDATE")
                 {
+                    Console.WriteLine("GetTopicDetailsAsync if true");
+
                     var serviceCall = new NotificationServicesCall(_tracer, _logHelper, _configuration);
                     _topicModel = await serviceCall.GetTopicDetailsAsync();
 
