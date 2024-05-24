@@ -8,8 +8,8 @@ namespace bbt.notification.worker.Models
     public class Consumer
     {
         public string id { get; set; }
-        public int client { get; set; }
-        public int user { get; set; }
+        public long client { get; set; }
+        public long user { get; set; }
         public string filter { get; set; }
         public bool isPushEnabled { get; set; }
         public object deviceKey { get; set; }
