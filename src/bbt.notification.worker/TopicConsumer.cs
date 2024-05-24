@@ -215,6 +215,7 @@ namespace bbt.notification.worker
                 dengageRequestModel.phone.countryCode = consumerModel.consumers[0].phone.countryCode;
                 dengageRequestModel.phone.prefix = consumerModel.consumers[0].phone.prefix;
                 dengageRequestModel.phone.number = consumerModel.consumers[0].phone.number;
+                dengageRequestModel.CustomerNo = consumerModel.consumers[0].client;
                 dengageRequestModel.template = _topicModel.smsServiceReference;
                 dengageRequestModel.templateParams = postConsumerDetailRequestModel.jsonData;
                 dengageRequestModel.process.name = string.IsNullOrEmpty(_topicModel.processName) ? _topicModel.topic : _topicModel.processName;
