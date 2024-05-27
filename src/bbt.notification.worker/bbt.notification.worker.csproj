@@ -6,6 +6,7 @@
     <UserSecretsId>dotnet-bbt.notification.worker-4789F99A-C771-4997-B064-6554709BDFA8</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.11.3" />
     <PackageReference Include="bbt.framework.common" Version="6.2022.422.1027" />
     <PackageReference Include="Elastic.Apm.NetCoreAll" Version="1.16.1" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.3" />
