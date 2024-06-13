@@ -227,42 +227,43 @@ namespace bbt.notification.worker
                 var response = await ApiHelper.ApiClient.PostAsJsonAsync(sendSmsPath, dengageRequestModel);
 
                 if (!response.IsSuccessStatusCode)
+                {
+
+                    var errorResponseModel = new SendErrorResponseModel();
+                    errorResponseModel.StatusCode = ((int)response.StatusCode).ToString();
+                    errorResponseModel.ReasonPhrase = response.ReasonPhrase;
+                    var contentResult = await response.Content.ReadAsStringAsync();
+                    errorResponseModel.Message = contentResult;
+
+                    _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId,
+                            consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number : null,
+                            "", dengageRequestModel, errorResponseModel, NotificationTypeEnum.SMS.GetHashCode(), errorResponseModel.Message,
+                            "", consumerModel.consumers[0] != null ? consumerModel.consumers[0].isStaff : false);
                     return true;
+                }
 
                 var respModel = await response.Content.ReadAsAsync<SendMessageResponseModel>();
 
-                if (respModel == null || respModel.TxnId == null)
-                {
-                    _logHelper.LogCreate(respModel, false, "SendSmsContentResponseTxnModel", "TxnId is null");
-                }
-                else
+                if (respModel != null && respModel.TxnId != null)
                 {
                     var pathGeneratedMessage = baseModel.GetGeneratedMessageEndPoint().Replace("{txnId}", respModel.TxnId.ToString());
 
                     var htpResponse = await ApiHelper.ApiClient.GetAsync(pathGeneratedMessage);
 
-                    if (!htpResponse.IsSuccessStatusCode)
+                    var generatedMessageModel = await htpResponse.Content.ReadAsAsync<GeneratedMessage>();
+
+                    if (generatedMessageModel == null)
                     {
-                        _logHelper.LogCreate(sendSmsPath, htpResponse, "SendSmsContentError", "GeneratedMessage status false");
+                        _logHelper.LogCreate(sendSmsPath, generatedMessageModel, "SendSmsContentResponseModel", "Content is null");
                     }
                     else
                     {
-                        var generatedMessageModel = await htpResponse.Content.ReadAsAsync<GeneratedMessage>();
-
-                        if (generatedMessageModel == null)
-                        {
-                            _logHelper.LogCreate(sendSmsPath, generatedMessageModel, "SendSmsContentResponseModel", "Content is null");
-                        }
-                        else
-                        {
-                            _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId,
-                                consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number : null,
-                                "", dengageRequestModel, response, NotificationTypeEnum.SMS.GetHashCode(), response.StatusCode.ToString(),
-                                generatedMessageModel.Content, consumerModel.consumers[0].isStaff);
-                        }
+                        _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId,
+                            consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number : null,
+                            "", dengageRequestModel, respModel, NotificationTypeEnum.SMS.GetHashCode(), response.StatusCode.ToString(),
+                            generatedMessageModel.Content, consumerModel.consumers[0] != null ? consumerModel.consumers[0].isStaff : false);
                     }
                 }
-
                 return true;
             }
             catch (Exception ex)
@@ -298,41 +299,44 @@ namespace bbt.notification.worker
                 var response = await ApiHelper.ApiClient.PostAsJsonAsync(sendEmailPath, emailRequestModel);
 
                 if (!response.IsSuccessStatusCode)
+                {
+                    var errorResponseModel = new SendErrorResponseModel();
+                    errorResponseModel.StatusCode = ((int)response.StatusCode).ToString();
+                    errorResponseModel.ReasonPhrase = response.ReasonPhrase;
+                    var contentResult = await response.Content.ReadAsStringAsync();
+                    errorResponseModel.Message = contentResult;
+
+                    _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId,
+                            consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number : null,
+                            "", emailRequestModel, errorResponseModel, NotificationTypeEnum.EMAIL.GetHashCode(), errorResponseModel.Message,
+                            "", consumerModel.consumers[0] != null ? consumerModel.consumers[0].isStaff : false);
                     return true;
+                }
+
 
                 var respModel = await response.Content.ReadAsAsync<SendMessageResponseModel>();
 
-                if (respModel == null || respModel.TxnId == null)
-                {
-                    _logHelper.LogCreate(respModel, false, "SendEmailContentResponseTxnModel", "TxnId is null");
-                }
-                else
+                if (respModel != null && respModel.TxnId != null)
                 {
                     var pathGeneratedMessage = baseModel.GetGeneratedMessageEndPoint().Replace("{txnId}", respModel.TxnId.ToString());
 
                     var htpResponse = await ApiHelper.ApiClient.GetAsync(pathGeneratedMessage);
 
-                    if (!htpResponse.IsSuccessStatusCode)
+                    var generatedMessageModel = await htpResponse.Content.ReadAsAsync<GeneratedMessage>();
+
+                    if (generatedMessageModel == null)
                     {
-                        _logHelper.LogCreate(sendEmailPath, htpResponse, "SendEmailContentError", "GeneratedMessage status false");
+                        _logHelper.LogCreate(sendEmailPath, generatedMessageModel, "SendEmailContentResponseModel", "Content is null");
                     }
                     else
                     {
-                        var generatedMessageModel = await htpResponse.Content.ReadAsAsync<GeneratedMessage>();
+                        _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId, "",
+                            consumerModel.consumers[0] != null ? consumerModel.consumers[0].email : null,
+                            emailRequestModel, respModel, NotificationTypeEnum.EMAIL.GetHashCode(), response.StatusCode.ToString(),
+                            generatedMessageModel.Content, consumerModel.consumers[0] != null ? consumerModel.consumers[0].isStaff : false);
 
-                        if (generatedMessageModel == null)
-                        {
-                            _logHelper.LogCreate(sendEmailPath, generatedMessageModel, "SendEmailContentResponseModel", "Content is null");
-                        }
-                        else
-                        {
-                            _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId, "",
-                                consumerModel.consumers[0] != null ? consumerModel.consumers[0].email : null,
-                                emailRequestModel, response, NotificationTypeEnum.EMAIL.GetHashCode(), response.StatusCode.ToString(),
-                                generatedMessageModel.Content, consumerModel.consumers[0].isStaff);
-
-                        }
                     }
+
                 }
 
                 return true;
@@ -370,38 +374,40 @@ namespace bbt.notification.worker
                 var response = await ApiHelper.ApiClient.PostAsJsonAsync(sendPushPath, pushNotificationRequestModel);
 
                 if (!response.IsSuccessStatusCode)
+                {
+                    var errorResponseModel = new SendErrorResponseModel();
+                    errorResponseModel.StatusCode = ((int)response.StatusCode).ToString();
+                    errorResponseModel.ReasonPhrase = response.ReasonPhrase;
+                    var contentResult = await response.Content.ReadAsStringAsync();
+                    errorResponseModel.Message = contentResult;
+
+                    _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId,
+                            consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number : null,
+                            "", pushNotificationRequestModel, errorResponseModel, NotificationTypeEnum.PUSHNOTIFICATION.GetHashCode(), errorResponseModel.Message,
+                            "", consumerModel.consumers[0] != null ? consumerModel.consumers[0].isStaff : false);
                     return true;
+                }
+
 
                 var respModel = await response.Content.ReadAsAsync<SendMessageResponseModel>();
 
-                if (respModel == null || respModel.TxnId == null)
+                if (respModel != null && respModel.TxnId != null)
                 {
-                    _logHelper.LogCreate(respModel, false, "SendPushContentResponseTxnModel", "TxnId is null");
-                }
-                else
-                {
+
                     var pathGeneratedMessage = baseModel.GetGeneratedMessageEndPoint().Replace("{txnId}", respModel.TxnId.ToString());
                     var htpResponse = await ApiHelper.ApiClient.GetAsync(pathGeneratedMessage);
 
-                    if (!htpResponse.IsSuccessStatusCode)
+                    var generatedMessageModel = await htpResponse.Content.ReadAsAsync<GeneratedMessage>();
+
+                    if (generatedMessageModel == null)
                     {
-                        _logHelper.LogCreate(sendPushPath, htpResponse, "SendPushContentError", "GeneratedMessage status false");
+                        _logHelper.LogCreate(sendPushPath, generatedMessageModel, "SendPushContentResponseModel", "Content is null");
                     }
                     else
                     {
-                        var generatedMessageModel = await htpResponse.Content.ReadAsAsync<GeneratedMessage>();
-
-                        if (generatedMessageModel == null)
-                        {
-                            _logHelper.LogCreate(sendPushPath, generatedMessageModel, "SendPushContentResponseModel", "Content is null");
-                        }
-                        else
-                        {
-                            _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId, consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number : null, "", JsonConvert.SerializeObject(pushNotificationRequestModel, Formatting.Indented), response, NotificationTypeEnum.PUSHNOTIFICATION.GetHashCode(), response.StatusCode.ToString(), generatedMessageModel.Content, consumerModel.consumers[0].isStaff);
-                        }
+                        _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId, consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number : null, "", JsonConvert.SerializeObject(pushNotificationRequestModel, Formatting.Indented), respModel, NotificationTypeEnum.PUSHNOTIFICATION.GetHashCode(), response.StatusCode.ToString(), generatedMessageModel.Content, consumerModel.consumers[0] != null ? consumerModel.consumers[0].isStaff : false);
                     }
                 }
-
                 return true;
             }
             catch (Exception ex)
