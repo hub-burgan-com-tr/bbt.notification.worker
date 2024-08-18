@@ -1,4 +1,6 @@
-﻿namespace bbt.notification.worker.Helper
+﻿using bbt.notification.worker.Models;
+
+namespace bbt.notification.worker.Helper
 {
     public static class CommonHelper
     {

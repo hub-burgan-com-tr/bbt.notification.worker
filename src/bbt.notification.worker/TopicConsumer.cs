@@ -1,7 +1,7 @@
-using bbt.framework.kafka;
 using bbt.notification.worker.Enum;
 using bbt.notification.worker.Helper;
 using bbt.notification.worker.Models;
+using bbt.notification.worker.Models.Kafka;
 using Elastic.Apm.Api;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -9,7 +9,7 @@ using System.Text;
 
 namespace bbt.notification.worker
 {
-    public class TopicConsumer : BaseConsumer<string>
+    public class TopicConsumer : BaseNotificationConsumer<string>
     {
         BaseModel baseModel = new BaseModel();
         private TopicModel _topicModel;
@@ -18,10 +18,10 @@ namespace bbt.notification.worker
         private readonly IConfiguration _configuration;
 
         public TopicConsumer(
-        KafkaSettings _kafkaSettings,
+        NotificationKafkaSettings _kafkaSettings,
         CancellationToken _cancellationToken,
         ITracer tracer,
-        ILogger _logger, TopicModel topicModel, ILogHelper logHelper, IConfiguration configuration) : base(_kafkaSettings, _cancellationToken, _logger)
+        ILogger _logger, TopicModel topicModel, ILogHelper logHelper, IConfiguration configuration) : base(_kafkaSettings, _cancellationToken, _logger, logHelper)
         {
             _tracer = tracer;
             _topicModel = topicModel;
