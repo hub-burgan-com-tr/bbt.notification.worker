@@ -2,7 +2,7 @@
 {
     public static class HealtCheckHelper
     {
-        private static string path = "/tmp/liveness_healthy1";
+        private static string path = "/tmp/liveness_healthy";
 
         public static void WriteHealthy()
         {
