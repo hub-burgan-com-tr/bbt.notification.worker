@@ -1,4 +1,3 @@
-using bbt.framework.kafka;
 using bbt.notification.worker;
 using bbt.notification.worker.Helper;
 using Elastic.Apm;
@@ -35,7 +34,6 @@ IHost host = Host.CreateDefaultBuilder(args)
     }
     );
 
-    services.Configure<KafkaSettings>(configuration.GetSection(nameof(KafkaSettings)));
     services.AddSingleton(n => Agent.Tracer);
 
 }).UseAllElasticApm()
