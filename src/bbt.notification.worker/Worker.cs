@@ -32,6 +32,8 @@ public class Worker : BackgroundService
         {
             try
             {
+                HealtCheckHelper.WriteHealthy();
+
                 logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
 
                 ApiHelper.InitializeClient();
@@ -52,6 +54,9 @@ public class Worker : BackgroundService
             }
             catch (Exception e)
             {
+                HealtCheckHelper.WriteUnhealthy();
+                logger.LogError("SOURCE_TOPIC_ERROR");
+                logHelper.LogCreate(false, false, "ExecuteAsync", "SOURCE_TOPIC_ERROR");
                 logHelper.LogCreate(stoppingToken, kafkaSettings, "ExecuteAsync", e.Message);
                 tracer.CaptureException(e);
             }

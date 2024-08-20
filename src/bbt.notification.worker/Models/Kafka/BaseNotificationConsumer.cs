@@ -79,8 +79,7 @@ namespace bbt.notification.worker.Models.Kafka
 
                             try
                             {
-                                var consumeResult = consumer.Consume(cancellationToken);
-                                
+                                var consumeResult = consumer.Consume(cancellationToken);                                
 
                                 if (consumeResult.Message is Message<Ignore, string> result)
                                 {
@@ -115,13 +114,22 @@ namespace bbt.notification.worker.Models.Kafka
 
                                     if (!IsIgnore)
                                     {
-                                        IsSuccess = await Process(model);
+                                        try
+                                        {
+                                            IsSuccess = await Process(model);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            logger.LogError(ex.ToString());
+                                        }
+
                                         OnConsume?.Invoke(model);
                                     }
                                 }
                             }
                             catch (Exception ex)
                             {
+                                logger.LogError("KAFKA_ERROR");
                                 logger.LogError(message);
                                 logger.LogError(ex.ToString());
                                 ProcessUnhealtyKafka();
@@ -134,6 +142,7 @@ namespace bbt.notification.worker.Models.Kafka
             }
             catch (Exception ex)
             {
+                logger.LogError("KAFKA_ERROR");
                 logger.LogError(ex.ToString());
                 ProcessUnhealtyKafka();
             }
@@ -142,7 +151,7 @@ namespace bbt.notification.worker.Models.Kafka
         private void ProcessUnhealtyKafka()
         {
             HealtCheckHelper.WriteUnhealthy();
-            _logHelper.LogCreate(false, false, "BaseConsumeAsync", "KAFKA ERROR");
+            _logHelper.LogCreate(false, false, "BaseConsumeAsync", "KAFKA_ERROR");
         }
 
         public abstract Task<bool> Process(T model);
