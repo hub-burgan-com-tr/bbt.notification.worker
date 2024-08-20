@@ -2,14 +2,18 @@
 {
     public static class HealtCheckHelper
     {
+        private static string path = "/tmp/liveness_healthy";
+
         public static void WriteHealthy()
         {
-            File.WriteAllText("/tmp/liveness_healthy", "OK");
+            if (File.Exists(path))
+                File.WriteAllText(path, "OK"); 
         }
 
         public static void WriteUnhealthy()
         {
-            File.WriteAllText("/tmp/liveness_healthy", "ERROR");
+            if (File.Exists(path))
+                File.WriteAllText(path, "ERROR");
         }
     }
 }
