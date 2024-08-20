@@ -6,14 +6,12 @@
 
         public static void WriteHealthy()
         {
-            if (File.Exists(path))
-                File.WriteAllText(path, "OK"); 
+            File.WriteAllText(path, "OK");
         }
 
         public static void WriteUnhealthy()
         {
-            if (File.Exists(path))
-                File.WriteAllText(path, "ERROR");
+            File.WriteAllText(path, "ERROR");
         }
     }
 }
