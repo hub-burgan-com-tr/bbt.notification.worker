@@ -19,8 +19,8 @@ namespace bbt.notification.worker.Models.Kafka
         private readonly ILogHelper _logHelper;
 
         public BaseNotificationConsumer
-            (NotificationKafkaSettings _kafkaSettings, 
-            CancellationToken _cancellationToken, 
+            (NotificationKafkaSettings _kafkaSettings,
+            CancellationToken _cancellationToken,
             ILogger _logger,
             ILogHelper logHelper
             )
@@ -63,7 +63,8 @@ namespace bbt.notification.worker.Models.Kafka
                 {
                     consumer.Subscribe(kafkaSettings.Topic);
 
-                    Console.WriteLine($"Subscribed to {kafkaSettings.Topic}");
+                    foreach (string topic in kafkaSettings.Topic)
+                        Console.WriteLine($"Subscribed to {topic}");
 
                     await Task.Run(async () =>
                     {
@@ -79,7 +80,7 @@ namespace bbt.notification.worker.Models.Kafka
 
                             try
                             {
-                                var consumeResult = consumer.Consume(cancellationToken);                                
+                                var consumeResult = consumer.Consume(cancellationToken);
 
                                 if (consumeResult.Message is Message<Ignore, string> result)
                                 {
