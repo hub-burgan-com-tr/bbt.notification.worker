@@ -207,6 +207,7 @@ namespace bbt.notification.worker
         {
             try
             {
+              
                 if (IsNoticationExpired(obj, "SendSms"))
                     return false;
 
@@ -221,6 +222,12 @@ namespace bbt.notification.worker
                 dengageRequestModel.process.ItemId = GetProcessItemId(obj, _topicModel.processItemId);
                 dengageRequestModel.process.Action = "Notification";
                 dengageRequestModel.process.Identity = "1";
+
+                if (dengageRequestModel.phone.number == 0)
+                {
+                    _logHelper.LogCreate(dengageRequestModel.CustomerNo, false, "SendSms", "PhoneNumber is empty");
+                    return false;
+                }
 
                 var sendSmsPath = baseModel.GetSendSmsEndpoint();
                 var response = await ApiHelper.ApiClient.PostAsJsonAsync(sendSmsPath, dengageRequestModel);
