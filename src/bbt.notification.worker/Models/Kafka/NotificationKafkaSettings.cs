@@ -11,6 +11,6 @@ namespace bbt.notification.worker.Models.Kafka
         public string[] Topic { get; set; }
         public string SslCaLocation { get; set; }
         public SecurityProtocol SecurityProtocol { get; set; } = Confluent.Kafka.SecurityProtocol.Ssl;
-        public AutoOffsetReset AutoOffsetReset { get; set; } = AutoOffsetReset.Latest;
+        public AutoOffsetReset AutoOffsetReset { get; set; } = AutoOffsetReset.Earliest;
     }
 }
