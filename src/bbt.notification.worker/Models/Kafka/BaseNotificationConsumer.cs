@@ -46,7 +46,7 @@ namespace bbt.notification.worker.Models.Kafka
                 SecurityProtocol = kafkaSettings.SecurityProtocol,
                 SslCaLocation = kafkaSettings.SslCaLocation,
                 AutoOffsetReset = kafkaSettings.AutoOffsetReset,
-                EnableAutoCommit = false,
+                EnableAutoCommit = true,
                 IsolationLevel = kafkaSettings.IsolationLevel,
                 ClientId = kafkaSettings.ClientId
             };
@@ -132,7 +132,7 @@ namespace bbt.notification.worker.Models.Kafka
                             {
                                 logger.LogError("KAFKA_ERROR");
                                 logger.LogError(message);
-                                logger.LogError(ex.ToString());
+                                logger.LogError("ConsumeError: " + ex.ToString());
                                 ProcessUnhealtyKafka();
                             }
                         }
@@ -144,7 +144,7 @@ namespace bbt.notification.worker.Models.Kafka
             catch (Exception ex)
             {
                 logger.LogError("KAFKA_ERROR");
-                logger.LogError(ex.ToString());
+                logger.LogError("SubscribeError: " + ex.ToString());
                 ProcessUnhealtyKafka();
             }
         }
