@@ -3,7 +3,6 @@ using bbt.notification.worker.Helper;
 using bbt.notification.worker.Models;
 using bbt.notification.worker.Models.Kafka;
 using Elastic.Apm.Api;
-using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Text;
@@ -18,6 +17,7 @@ namespace bbt.notification.worker
         private readonly ILogHelper _logHelper;
         private readonly IConfiguration _configuration;
         private readonly ILogger logger;
+        long _clientId = 0;
 
         public TopicConsumer(
         NotificationKafkaSettings _kafkaSettings,
@@ -58,7 +58,7 @@ namespace bbt.notification.worker
                 {
                     _logHelper.LogCreate(model, false, "Process", e.Message);
                     _tracer.CaptureException(e);
-                    retVal = false;
+                    retVal = true;
                 }
             });
 
@@ -92,7 +92,7 @@ namespace bbt.notification.worker
             {
                 _logHelper.LogCreate(model, false, "ProcessSourceUpdates", e.Message);
                 _tracer.CaptureException(e);
-                return false;
+                return true;
             }
         }
 
@@ -101,24 +101,32 @@ namespace bbt.notification.worker
             try
             {
                 var obj = JObject.Parse(model);
-                var clientId = Convert.ToInt32(obj.SelectToken(_topicModel.clientIdJsonPath));
+
+                var strClientId = obj.SelectToken(_topicModel.clientIdJsonPath).ToString();
+
+                _clientId = await GetClientId(strClientId);
+
+                if (_clientId == 0)
+                {
+                    _logHelper.LogCreate(strClientId, false, "ProcessNotifications", "CustomerNo is not found");
+                    return true;
+                }
 
                 var postConsumerDetailRequestModel = new PostConsumerDetailRequestModel
                 {
-                    client = clientId,
+                    client = _clientId,
                     sourceId = Convert.ToInt32(CommonHelper.GetWorkerTopicId(_configuration)),
-                    jsonData = obj.SelectToken
-                    ("message.data").ToString().Replace(Environment.NewLine, string.Empty)
+                    jsonData = obj.SelectToken("message.data").ToString().Replace(Environment.NewLine, string.Empty)
                 };
 
-                await SetTemplateData(postConsumerDetailRequestModel, obj, clientId);
+                await SetServiceUrlData(postConsumerDetailRequestModel, obj);
 
                 var notificationServicesCall = new NotificationServicesCall(_tracer, _logHelper, _configuration);
                 var consumerModel = await notificationServicesCall.PostConsumerDetailAsync(postConsumerDetailRequestModel);
 
                 if (!HasConsumer(consumerModel))
                 {
-                    _logHelper.LogCreate(consumerModel, false, "ProcessNotifications", "Consumer null Client:" + clientId.ToString());
+                    _logHelper.LogCreate(consumerModel, false, "ProcessNotifications", "Consumer null Client:" + _clientId.ToString());
                     return true;
                 }
 
@@ -143,11 +151,25 @@ namespace bbt.notification.worker
             {
                 _logHelper.LogCreate(model, false, "ProcessNotifications", e.Message);
                 _tracer.CaptureException(e);
-                return false;
+                return true;
             }
         }
 
-        private async Task SetTemplateData(PostConsumerDetailRequestModel postConsumerDetailRequestModel, JObject obj, int clientId)
+        private async Task<long> GetClientId(string strClientId)
+        {
+            if (strClientId.Length == 10 || strClientId.Length == 11) // Citizenship or Tax Number
+            {
+                var customerApiCall = new CustomerApiCall(_tracer, _logHelper, _configuration);
+
+                return await customerApiCall.GetCustomer(strClientId);
+            }
+            else
+            {
+                return Convert.ToInt64(strClientId);
+            }
+        }
+
+        private async Task SetServiceUrlData(PostConsumerDetailRequestModel postConsumerDetailRequestModel, JObject obj)
         {
             if (_topicModel.ServiceUrlList.Count <= 0)
                 return;
@@ -156,7 +178,7 @@ namespace bbt.notification.worker
             {
                 var enrichmentServiceRequestModel = new EnrichmentServiceRequestModel
                 {
-                    customerId = clientId,
+                    customerId = _clientId,
                     dataModel = obj.SelectToken("message.data").ToString().Replace(Environment.NewLine, string.Empty)
                 };
 
@@ -519,11 +541,9 @@ namespace bbt.notification.worker
                 kafkaDataTime = Convert.ToDateTime(obj.SelectToken("message.headers.timestamp"));
             }
 
-            var clientId = Convert.ToInt32(obj.SelectToken(_topicModel.clientIdJsonPath));
-
             if (_topicModel.RetentationTime != 0 && kafkaDataTime < DateTime.Now.AddMinutes(-_topicModel.RetentationTime))
             {
-                _logHelper.LogCreate(clientId, false, methodName, "Kafka data is expired. kafkaDataTime: " + kafkaDataTime.ToString());
+                _logHelper.LogCreate(_clientId, false, methodName, "Kafka data is expired. kafkaDataTime: " + kafkaDataTime.ToString());
                 return true;
             }
 
