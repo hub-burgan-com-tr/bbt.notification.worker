@@ -130,13 +130,20 @@ namespace bbt.notification.worker.Models.Kafka
                                     }
                                 }
                             }
-                            catch (Exception ex)
+                            catch (KafkaException ex)
                             {
-                                if (((KafkaException)ex).Error.Code == ErrorCode.UnknownTopicOrPart)
+                                if (ex.Error.Code == ErrorCode.UnknownTopicOrPart)
                                 {
                                     await CreateTopicIfNotExist(kafkaSettings.Topic[0]);
                                 }
 
+                                logger.LogError("KAFKA_ERROR");
+                                logger.LogError(message);
+                                logger.LogError("KafkaException: " + ex.ToString());
+                                ProcessUnhealtyKafka();
+                            }
+                            catch (Exception ex)
+                            {
                                 logger.LogError("KAFKA_ERROR");
                                 logger.LogError(message);
                                 logger.LogError("ConsumeError: " + ex.ToString());
