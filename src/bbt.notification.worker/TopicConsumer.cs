@@ -16,20 +16,20 @@ namespace bbt.notification.worker
         private readonly ITracer _tracer;
         private readonly ILogHelper _logHelper;
         private readonly IConfiguration _configuration;
-        private readonly ILogger logger;
+        private readonly ILogger _logger;
         long _clientId = 0;
 
         public TopicConsumer(
         NotificationKafkaSettings _kafkaSettings,
         CancellationToken _cancellationToken,
         ITracer tracer,
-        ILogger _logger, TopicModel topicModel, ILogHelper logHelper, IConfiguration configuration) : base(_kafkaSettings, _cancellationToken, _logger, logHelper)
+        ILogger logger, TopicModel topicModel, ILogHelper logHelper, IConfiguration configuration) : base(_kafkaSettings, _cancellationToken, logger, logHelper)
         {
             _tracer = tracer;
             _topicModel = topicModel;
             _logHelper = logHelper;
             _configuration = configuration;
-            logger = _logger;
+            _logger = logger;
         }
         public override async Task<bool> Process(string model)
         {
@@ -81,7 +81,7 @@ namespace bbt.notification.worker
                     if (_topicModel == null || string.IsNullOrWhiteSpace(_topicModel.topic))
                     {
                         HealtCheckHelper.WriteUnhealthy();
-                        logger.LogError("SOURCE_TOPIC_ERROR");
+                        _logger.LogError("SOURCE_TOPIC_ERROR");
                         _logHelper.LogCreate(false, false, "ProcessSourceUpdates", "SOURCE_TOPIC_ERROR");
                     }
                 }
@@ -100,23 +100,26 @@ namespace bbt.notification.worker
         {
             try
             {
-                var obj = JObject.Parse(model);
-
-                var strClientId = obj.SelectToken(_topicModel.clientIdJsonPath).ToString();
-
-                _clientId = await GetClientId(strClientId);
+                _clientId = await GetClientId(model);
 
                 if (_clientId == 0)
                 {
-                    _logHelper.LogCreate(strClientId, false, "ProcessNotifications", "CustomerNo is not found");
+                    _logHelper.LogCreate(model, false, "ProcessNotifications", "CustomerNo is not found");
                     return true;
+                }
+
+                var obj = JObject.Parse(model);
+
+                if (_topicModel.messageDataFieldType == (int)MessageDataFieldType.String)
+                {
+                    model = GetReplacedJsonString(model);
                 }
 
                 var postConsumerDetailRequestModel = new PostConsumerDetailRequestModel
                 {
                     client = _clientId,
                     sourceId = Convert.ToInt32(CommonHelper.GetWorkerTopicId(_configuration)),
-                    jsonData = obj.SelectToken("message.data").ToString().Replace(Environment.NewLine, string.Empty)
+                    jsonData = GetJsonValue(obj, _topicModel.messageDataJsonPath).Replace(Environment.NewLine, string.Empty)
                 };
 
                 await SetServiceUrlData(postConsumerDetailRequestModel, obj);
@@ -155,8 +158,16 @@ namespace bbt.notification.worker
             }
         }
 
-        private async Task<long> GetClientId(string strClientId)
+        private async Task<long> GetClientId(string model)
         {
+            if (_topicModel.messageDataFieldType == (int)MessageDataFieldType.String && _topicModel.clientIdJsonPath.StartsWith(_topicModel.messageDataJsonPath))
+            {
+                model = GetReplacedJsonString(model);
+            }
+
+            var obj = JObject.Parse(model);
+            var strClientId = GetJsonValue(obj, _topicModel.clientIdJsonPath);
+
             if (strClientId.Length == 10 || strClientId.Length == 11) // Citizenship or Tax Number
             {
                 var customerApiCall = new CustomerApiCall(_tracer, _logHelper, _configuration);
@@ -165,7 +176,7 @@ namespace bbt.notification.worker
             }
             else
             {
-                return Convert.ToInt64(strClientId);
+                try { return Convert.ToInt64(strClientId); } catch { return 0; }
             }
         }
 
@@ -179,7 +190,7 @@ namespace bbt.notification.worker
                 var enrichmentServiceRequestModel = new EnrichmentServiceRequestModel
                 {
                     customerId = _clientId,
-                    dataModel = obj.SelectToken("message.data").ToString().Replace(Environment.NewLine, string.Empty)
+                    dataModel = GetJsonValue(obj, _topicModel.messageDataJsonPath).Replace(Environment.NewLine, string.Empty)
                 };
 
                 var enrichmentServicesCall = new EnrichmentServicesCall(_tracer, _logHelper);
@@ -250,61 +261,18 @@ namespace bbt.notification.worker
                     return false;
                 }
 
-                var sendSmsPath = baseModel.GetSendSmsEndpoint();
-                var response = await ApiHelper.ApiClient.PostAsJsonAsync(sendSmsPath, dengageRequestModel);
+                var notificationResponse = await ApiHelper.ApiClient.PostAsJsonAsync(baseModel.GetSendSmsEndpoint(), dengageRequestModel);
 
-                if (!response.IsSuccessStatusCode)
-                {
-
-                    var errorResponseModel = new SendErrorResponseModel();
-                    errorResponseModel.StatusCode = ((int)response.StatusCode).ToString();
-                    errorResponseModel.ReasonPhrase = response.ReasonPhrase;
-                    var contentResult = await response.Content.ReadAsStringAsync();
-                    errorResponseModel.Message = contentResult;
-
-                    _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId,
-                            consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number : null,
-                            "", dengageRequestModel, errorResponseModel, NotificationTypeEnum.SMS.GetHashCode(), errorResponseModel.Message,
-                            "", consumerModel.consumers[0] != null ? consumerModel.consumers[0].isStaff : false);
-                    return true;
-                }
-
-                var respModel = await response.Content.ReadAsAsync<SendMessageResponseModel>();
-
-                if (respModel != null && respModel.TxnId != null)
-                {
-                    var pathGeneratedMessage = baseModel.GetGeneratedMessageEndPoint().Replace("{txnId}", respModel.TxnId.ToString());
-
-                    var httpResponse = await ApiHelper.ApiClient.GetAsync(pathGeneratedMessage);
-
-                    string content = "";
-
-                    if (httpResponse.IsSuccessStatusCode)
-                    {
-                        var generatedMessageModel = await httpResponse.Content.ReadAsAsync<GeneratedMessage>();
-
-                        if (generatedMessageModel == null)
-                        {
-                            _logHelper.LogCreate(sendSmsPath, generatedMessageModel, "SendSmsContentResponseModel", "Content is null");
-                        }
-                        else
-                        {
-                            content = generatedMessageModel.Content;
-                        }
-                    }
-                    else
-                    {
-                        var generatedMessageModel = await httpResponse.Content.ReadAsStringAsync();
-                        _logHelper.LogCreate(sendSmsPath, generatedMessageModel, "SendSmsContentResponseModel", generatedMessageModel);
-                    }
-
-                    _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId,
-                        consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number : null,
-                        "", dengageRequestModel, respModel, NotificationTypeEnum.SMS.GetHashCode(), response.StatusCode.ToString(),
-                        content, consumerModel.consumers[0] != null ? consumerModel.consumers[0].isStaff : false);
-                }
-
-
+                await MessageNotificationLogCreate(
+                                                    notificationResponse,
+                                                    postConsumerDetailRequestModel,
+                                                    consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number,
+                                                    "",
+                                                    dengageRequestModel,
+                                                    NotificationTypeEnum.SMS,
+                                                    dengageRequestModel.template,
+                                                    consumerModel.consumers[0].isStaff
+                                                  );
                 return true;
             }
             catch (Exception ex)
@@ -321,77 +289,39 @@ namespace bbt.notification.worker
                 if (IsNoticationExpired(obj, "SendEmail"))
                     return false;
 
-                var emailRequestModel = new EmailRequestModel();
-                emailRequestModel.CustomerNo = consumerModel.consumers[0].client;
-                emailRequestModel.Email = consumerModel.consumers[0].email;
+                var emailRequestModel = new EmailRequestModel
+                {
+                    CustomerNo = consumerModel.consumers[0].client,
+                    Email = consumerModel.consumers[0].email,
+                    TemplateParams = postConsumerDetailRequestModel.jsonData,
+                    Template = _topicModel.emailServiceReference,
+                    Process = new DengageRequestModel.Process
+                    {
+                        name = string.IsNullOrEmpty(_topicModel.processName) ? _topicModel.topic : _topicModel.processName,
+                        ItemId = GetProcessItemId(obj, _topicModel.processItemId),
+                        Action = "Notification",
+                        Identity = "1"
+                    }
+                };
 
                 if (string.IsNullOrEmpty(emailRequestModel.Email))
                 {
-                    _logHelper.LogCreate("CustomerNo=>" + emailRequestModel.CustomerNo, false, "SendEmail", " Email address is null");
+                    _logHelper.LogCreate(emailRequestModel.CustomerNo, false, "SendEmail", " Email address is null");
                     return false;
                 }
 
-                emailRequestModel.TemplateParams = postConsumerDetailRequestModel.jsonData;
-                emailRequestModel.Template = _topicModel.emailServiceReference;
-                emailRequestModel.Process = new DengageRequestModel.Process();
-                emailRequestModel.Process.name = string.IsNullOrEmpty(_topicModel.processName) ? _topicModel.topic : _topicModel.processName;
-                emailRequestModel.Process.ItemId = GetProcessItemId(obj, _topicModel.processItemId);
-                emailRequestModel.Process.Action = "Notification";
-                emailRequestModel.Process.Identity = "1";
+                var notificationResponse = await ApiHelper.ApiClient.PostAsJsonAsync(baseModel.GetSendEmailEndpoint(), emailRequestModel);
 
-                var sendEmailPath = baseModel.GetSendEmailEndpoint();
-                var response = await ApiHelper.ApiClient.PostAsJsonAsync(sendEmailPath, emailRequestModel);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorResponseModel = new SendErrorResponseModel();
-                    errorResponseModel.StatusCode = ((int)response.StatusCode).ToString();
-                    errorResponseModel.ReasonPhrase = response.ReasonPhrase;
-                    var contentResult = await response.Content.ReadAsStringAsync();
-                    errorResponseModel.Message = contentResult;
-
-                    _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId,
-                            consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number : null,
-                            "", emailRequestModel, errorResponseModel, NotificationTypeEnum.EMAIL.GetHashCode(), errorResponseModel.Message,
-                            "", consumerModel.consumers[0] != null ? consumerModel.consumers[0].isStaff : false);
-                    return true;
-                }
-
-                var respModel = await response.Content.ReadAsAsync<SendMessageResponseModel>();
-
-                if (respModel != null && respModel.TxnId != null)
-                {
-                    var pathGeneratedMessage = baseModel.GetGeneratedMessageEndPoint().Replace("{txnId}", respModel.TxnId.ToString());
-
-                    var httpResponse = await ApiHelper.ApiClient.GetAsync(pathGeneratedMessage);
-
-                    string content = "";
-
-                    if (httpResponse.IsSuccessStatusCode)
-                    {
-                        var generatedMessageModel = await httpResponse.Content.ReadAsAsync<GeneratedMessage>();
-
-                        if (generatedMessageModel == null)
-                        {
-                            _logHelper.LogCreate(sendEmailPath, generatedMessageModel, "SendEmailContentResponseModel", "Content is null");
-                        }
-                        else
-                        {
-                            content = generatedMessageModel.Content;
-                        }
-                    }
-                    else
-                    {
-                        var generatedMessageModel = await httpResponse.Content.ReadAsStringAsync();
-                        _logHelper.LogCreate(sendEmailPath, generatedMessageModel, "SendEmailContentResponseModel", generatedMessageModel);
-                    }
-
-                    _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId, "",
-                                consumerModel.consumers[0] != null ? consumerModel.consumers[0].email : null,
-                                emailRequestModel, respModel, NotificationTypeEnum.EMAIL.GetHashCode(), response.StatusCode.ToString(),
-                                content, consumerModel.consumers[0] != null ? consumerModel.consumers[0].isStaff : false);
-                }
-
+                await MessageNotificationLogCreate(
+                                                    notificationResponse,
+                                                    postConsumerDetailRequestModel,
+                                                    "",
+                                                    consumerModel.consumers[0].email,
+                                                    emailRequestModel,
+                                                    NotificationTypeEnum.EMAIL,
+                                                    emailRequestModel.Template,
+                                                    consumerModel.consumers[0].isStaff
+                                                  );
                 return true;
             }
             catch (Exception ex)
@@ -426,58 +356,18 @@ namespace bbt.notification.worker
                     }
                 };
 
-                var sendPushPath = baseModel.GetSendPushnotificationEndpoint();
-                var response = await ApiHelper.ApiClient.PostAsJsonAsync(sendPushPath, pushNotificationRequestModel);
+                var notificationResponse = await ApiHelper.ApiClient.PostAsJsonAsync(baseModel.GetSendPushnotificationEndpoint(), pushNotificationRequestModel);
 
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorResponseModel = new SendErrorResponseModel();
-                    errorResponseModel.StatusCode = ((int)response.StatusCode).ToString();
-                    errorResponseModel.ReasonPhrase = response.ReasonPhrase;
-                    var contentResult = await response.Content.ReadAsStringAsync();
-                    errorResponseModel.Message = contentResult;
-
-                    _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId,
-                            consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number : null,
-                            "", pushNotificationRequestModel, errorResponseModel, NotificationTypeEnum.PUSHNOTIFICATION.GetHashCode(), errorResponseModel.Message,
-                            "", consumerModel.consumers[0] != null ? consumerModel.consumers[0].isStaff : false);
-                    return true;
-                }
-
-                var respModel = await response.Content.ReadAsAsync<SendMessageResponseModel>();
-
-                if (respModel != null && respModel.TxnId != null)
-                {
-                    var pathGeneratedMessage = baseModel.GetGeneratedMessageEndPoint().Replace("{txnId}", respModel.TxnId.ToString());
-                    var httpResponse = await ApiHelper.ApiClient.GetAsync(pathGeneratedMessage);
-
-                    string content = "";
-
-                    if (httpResponse.IsSuccessStatusCode)
-                    {
-                        var generatedMessageModel = await httpResponse.Content.ReadAsAsync<GeneratedMessage>();
-
-                        if (generatedMessageModel == null)
-                        {
-                            _logHelper.LogCreate(sendPushPath, generatedMessageModel, "SendPushContentResponseModel", "Content is null");
-                        }
-                        else
-                        {
-                            content = generatedMessageModel.Content;
-                        }
-                    }
-                    else
-                    {
-                        var generatedMessageModel = await httpResponse.Content.ReadAsStringAsync();
-                        _logHelper.LogCreate(sendPushPath, generatedMessageModel, "SendPushContentResponseModel", generatedMessageModel);
-                    }
-
-                    _logHelper.MessageNotificationLogCreate(postConsumerDetailRequestModel.client, postConsumerDetailRequestModel.sourceId,
-                        consumerModel.consumers[0] != null ? consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number : null,
-                        "", JsonConvert.SerializeObject(pushNotificationRequestModel, Formatting.Indented), respModel, NotificationTypeEnum.PUSHNOTIFICATION.GetHashCode(), response.StatusCode.ToString(),
-                        content, consumerModel.consumers[0] != null ? consumerModel.consumers[0].isStaff : false);
-                }
-
+                await MessageNotificationLogCreate(
+                                                    notificationResponse,
+                                                    postConsumerDetailRequestModel,
+                                                    consumerModel.consumers[0].phone.prefix + "" + consumerModel.consumers[0].phone.number,
+                                                    "",
+                                                    JsonConvert.SerializeObject(pushNotificationRequestModel, Formatting.Indented),
+                                                    NotificationTypeEnum.PUSHNOTIFICATION,
+                                                    pushNotificationRequestModel.Template,
+                                                    consumerModel.consumers[0].isStaff
+                                                  );
                 return true;
             }
             catch (Exception ex)
@@ -549,5 +439,63 @@ namespace bbt.notification.worker
 
             return false;
         }
+
+        private async Task MessageNotificationLogCreate
+                                        (
+                                            HttpResponseMessage notificationResponse,
+                                            PostConsumerDetailRequestModel postConsumerDetailRequestModel,
+                                            string phoneNumber,
+                                            string email,
+                                            object requestModel,
+                                            NotificationTypeEnum notificationType,
+                                            string templateName,
+                                            bool isStaff
+                                        )
+        {
+            object responseModel;
+            string responseMessage;
+
+            if (notificationResponse.IsSuccessStatusCode)
+            {
+                var sendMessageResponseModel = await notificationResponse.Content.ReadAsAsync<SendMessageResponseModel>();
+
+                responseModel = sendMessageResponseModel;
+                responseMessage = notificationResponse.StatusCode.ToString();
+            }
+            else
+            {
+                var errorResponseModel = new SendErrorResponseModel
+                {
+                    StatusCode = ((int)notificationResponse.StatusCode).ToString(),
+                    ReasonPhrase = notificationResponse.ReasonPhrase ?? ""
+                };
+
+                var contentResult = await notificationResponse.Content.ReadAsStringAsync();
+                errorResponseModel.Message = contentResult;
+
+                responseModel = errorResponseModel;
+                responseMessage = errorResponseModel.Message;
+            }
+
+            _logHelper.MessageNotificationLogCreate
+                (
+                    postConsumerDetailRequestModel.client,
+                    postConsumerDetailRequestModel.sourceId,
+                    phoneNumber,
+                    email,
+                    requestModel,
+                    responseModel,
+                    notificationType.GetHashCode(),
+                    responseMessage,
+                    templateName,
+                    isStaff
+                );
+        }
+
+        private static string GetReplacedJsonString(string str)
+        {
+            return str.Replace("\\\"", "\"").Replace("\"{", "{").Replace("}\"", "}");
+        }
+
     }
 }
