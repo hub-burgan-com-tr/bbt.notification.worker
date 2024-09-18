@@ -100,23 +100,26 @@ namespace bbt.notification.worker
         {
             try
             {
-                var obj = JObject.Parse(model);
-
-                var strClientId = GetJsonValue(obj, _topicModel.clientIdJsonPath);
-
-                _clientId = await GetClientId(strClientId);
+                _clientId = await GetClientId(model);
 
                 if (_clientId == 0)
                 {
-                    _logHelper.LogCreate(strClientId, false, "ProcessNotifications", "CustomerNo is not found");
+                    _logHelper.LogCreate(model, false, "ProcessNotifications", "CustomerNo is not found");
                     return true;
+                }
+
+                var obj = JObject.Parse(model);
+
+                if (_topicModel.messageDataFieldType == (int)MessageDataFieldType.String)
+                {
+                    model = GetReplacedJsonString(model);
                 }
 
                 var postConsumerDetailRequestModel = new PostConsumerDetailRequestModel
                 {
                     client = _clientId,
                     sourceId = Convert.ToInt32(CommonHelper.GetWorkerTopicId(_configuration)),
-                    jsonData = obj.SelectToken("message.data").ToString().Replace(Environment.NewLine, string.Empty)
+                    jsonData = GetJsonValue(obj, _topicModel.messageDataJsonPath).Replace(Environment.NewLine, string.Empty)
                 };
 
                 await SetServiceUrlData(postConsumerDetailRequestModel, obj);
@@ -155,8 +158,16 @@ namespace bbt.notification.worker
             }
         }
 
-        private async Task<long> GetClientId(string strClientId)
+        private async Task<long> GetClientId(string model)
         {
+            if (_topicModel.messageDataFieldType == (int)MessageDataFieldType.String && _topicModel.clientIdJsonPath.StartsWith(_topicModel.messageDataJsonPath))
+            {
+                model = GetReplacedJsonString(model);
+            }
+
+            var obj = JObject.Parse(model);
+            var strClientId = GetJsonValue(obj, _topicModel.clientIdJsonPath);
+
             if (strClientId.Length == 10 || strClientId.Length == 11) // Citizenship or Tax Number
             {
                 var customerApiCall = new CustomerApiCall(_tracer, _logHelper, _configuration);
@@ -179,7 +190,7 @@ namespace bbt.notification.worker
                 var enrichmentServiceRequestModel = new EnrichmentServiceRequestModel
                 {
                     customerId = _clientId,
-                    dataModel = obj.SelectToken("message.data").ToString().Replace(Environment.NewLine, string.Empty)
+                    dataModel = GetJsonValue(obj, _topicModel.messageDataJsonPath).Replace(Environment.NewLine, string.Empty)
                 };
 
                 var enrichmentServicesCall = new EnrichmentServicesCall(_tracer, _logHelper);
@@ -441,7 +452,6 @@ namespace bbt.notification.worker
                                             bool isStaff
                                         )
         {
-
             object responseModel;
             string responseMessage;
 
@@ -481,5 +491,11 @@ namespace bbt.notification.worker
                     isStaff
                 );
         }
+
+        private static string GetReplacedJsonString(string str)
+        {
+            return str.Replace("\\\"", "\"").Replace("\"{", "{").Replace("}\"", "}");
+        }
+
     }
 }

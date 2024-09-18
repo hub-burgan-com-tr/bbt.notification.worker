@@ -25,6 +25,8 @@ namespace bbt.notification.worker.Models
         public List<SourceServices> ServiceUrlList { get; set; }
         public int inheritanceType { get; set; }
         public int alwaysSendType { get; set; }
+        public string messageDataJsonPath { get; set; }
+        public int messageDataFieldType { get; set; }
     }
 
     public class SourceServices
