@@ -1,8 +1,10 @@
 ﻿using bbt.framework.kafka;
 using bbt.notification.worker.Helper;
 using Confluent.Kafka;
+using Confluent.Kafka.Admin;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using static Confluent.Kafka.ConfigPropertyNames;
 
 namespace bbt.notification.worker.Models.Kafka
 {
@@ -128,6 +130,18 @@ namespace bbt.notification.worker.Models.Kafka
                                     }
                                 }
                             }
+                            catch (KafkaException ex)
+                            {
+                                if (ex.Error.Code == ErrorCode.UnknownTopicOrPart)
+                                {
+                                    await CreateTopicIfNotExist(kafkaSettings.Topic[0]);
+                                }
+
+                                logger.LogError("KAFKA_ERROR");
+                                logger.LogError(message);
+                                logger.LogError("KafkaException: " + ex.ToString());
+                                ProcessUnhealtyKafka();
+                            }
                             catch (Exception ex)
                             {
                                 logger.LogError("KAFKA_ERROR");
@@ -156,5 +170,32 @@ namespace bbt.notification.worker.Models.Kafka
         }
 
         public abstract Task<bool> Process(T model);
+
+
+        private async Task CreateTopicIfNotExist(string topicName)
+        {
+            var config = GetConsumerConfig();
+
+            using (var adminClient = new AdminClientBuilder(
+                    new AdminClientConfig
+                    {
+                        BootstrapServers = config.BootstrapServers,
+                        SecurityProtocol = config.SecurityProtocol,
+                        SslCaLocation = config.SslCaLocation                        
+                    }
+                    ).Build()
+                )
+            {
+                try
+                {
+                    await adminClient.CreateTopicsAsync(new TopicSpecification[] {
+                    new TopicSpecification { Name = topicName, ReplicationFactor = 3, NumPartitions = 1 } });
+                }
+                catch (CreateTopicsException e)
+                {
+                    _logHelper.LogCreate(false, false, "CreateTopicIfNotExist", $"An error occured creating topic {e.Results[0].Topic}: {e.Results[0].Error.Reason}");
+                }
+            }
+        }
     }
 }

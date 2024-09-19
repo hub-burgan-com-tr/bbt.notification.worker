@@ -108,12 +108,12 @@ namespace bbt.notification.worker
                     return true;
                 }
 
-                var obj = JObject.Parse(model);
-
                 if (_topicModel.messageDataFieldType == (int)MessageDataFieldType.String)
                 {
                     model = GetReplacedJsonString(model);
                 }
+
+                var obj = JObject.Parse(model);
 
                 var postConsumerDetailRequestModel = new PostConsumerDetailRequestModel
                 {
